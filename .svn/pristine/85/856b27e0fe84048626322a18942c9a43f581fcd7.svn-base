@@ -1,0 +1,76 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\Wishlist;
+use Illuminate\Http\Request;
+use App\Traits\ResponseAPI;
+use Illuminate\Support\Facades\Auth;
+
+class WishlistController extends Controller
+{
+    use ResponseAPI;
+
+    public function addToWishlist(Request $request)
+    {   
+        $wishlist = Wishlist::where('product_id',$request->product_id)->where('user_id',Auth::user()->id)->pluck('id')->first();
+
+        if($wishlist){
+            Wishlist::where('id',$wishlist)->where('product_id',$request->product_id)->delete();
+            $responseData['status']=true;
+            $responseData['message'] = "Removed From Wishlist Successfully";
+            return response()->json($responseData);
+        }else {
+            $wishlist = Wishlist::create([
+                'product_id' => $request->product_id,
+                'user_id' => Auth::user()->id,
+                'is_favourite' => 1
+            ]);
+        }
+        
+
+        $responseData['status']=true;
+        $responseData['message'] = "Added To Wishlist Successfully";
+
+        $data = array(
+            "product_id" => $wishlist['product_id'],
+            "user_id" => $wishlist['user_id']
+          );
+          
+          $responseData['data']=$data;
+          return response()->json($responseData);
+
+    }
+  
+    public function wishlistProducts()
+    {
+        try {
+            $responseData=[];
+    
+            $responseData['wishlist']=[];
+            $wishlist = Wishlist::join('products','products.id','wishlists.product_id')
+                                ->join('categories','categories.id','products.category_id')
+                                ->where('current_stock','>',0)
+                                ->where('user_id',Auth::user()->id)->get();
+            foreach ($wishlist as $item) {
+                $wishlistDetails['wishlist_id'] = $item->id;
+                $wishlistDetails['user_id'] = $item->user_id;
+                $wishlistDetails['product_id'] = $item->product_id;
+                $wishlistDetails['product_name'] = $item->product_name;
+                $wishlistDetails['category_name'] = $item->category_name;
+                $wishlistDetails['product_price'] = $item->product_price;
+                $wishlistDetails['product_discount'] = $item->product_discount;
+                $wishlistDetails['product_image'] = url($item->product_image);
+
+                array_push($responseData['wishlist'],$wishlistDetails);
+            }
+            
+            return response()->json(['data' => $responseData], 200);
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+}

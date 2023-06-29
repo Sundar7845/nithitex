@@ -1,0 +1,193 @@
+
+<?php $__env->startSection('admin'); ?>
+<?php $__env->startSection('title'); ?>
+Order Details 
+<?php $__env->stopSection(); ?>
+<div class="page-content">
+    <section class="content-header">
+        <div class="container-fluid">
+          <div class="row mb-2">
+            <div class="col-sm-6">
+              
+            </div>
+            <div class="col-sm-6">
+              <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item"><a href="<?php echo e(route('dashboard')); ?>">Home</a></li>
+                <li class="breadcrumb-item active">Master</li>
+                <li class="breadcrumb-item active">Order Details</li>
+              </ol>
+            </div>
+          </div>
+        </div><!-- /.container-fluid -->
+    </section>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Order Details</h3>
+                    <a href="<?php echo e(route('order.all')); ?>" class="btn-dark btn-md btn" style="float: right;">Back</a>
+                </div>
+                <div class="card-body">
+                  <form action="<?php echo e(route('order.update')); ?>" method="POST">
+                    <?php echo csrf_field(); ?>
+
+                    <div class="row">
+                      <div class="col-md-4"></div>
+                      <div class="col-md-4"></div>
+                      <div class="col-md-4">
+                        <div class="form-group">
+                          <input type="hidden" name="order_id" value="<?php echo e($order->id); ?>"> 
+                          <select  name="order_status" id="order_status" class="form-control order_status">
+                            <option <?php echo e($order->status == 'pending'? 'selected':''); ?> value="pending">Pending</option>
+                            <option <?php echo e($order->status == 'confirmed'? 'selected':''); ?> value="confirmed">Confirmed</option>
+                            <option <?php echo e($order->status == 'processing'? 'selected':''); ?> value="processing">Processing</option>
+                            <option <?php echo e($order->status == 'picked'? 'selected':''); ?> value="picked">Picked</option>
+                            <option <?php echo e($order->status == 'shipped'? 'selected':''); ?> value="shipped">Shipped</option>
+                            <option <?php echo e($order->status == 'delivered'? 'selected':''); ?> value="delivered">Delivered</option>
+                            <option <?php echo e($order->status == 'cancelled'? 'selected':''); ?> value="cancelled">Cancelled</option>
+                          </select>
+                          
+                          <?php $__errorArgs = ['order_status'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> 
+                          <span class="text-danger"><?php echo e($message); ?></span>
+                          <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+
+                          <input type="hidden" id="hidstatus" value="<?php echo e($order->status); ?>" />
+                          <input type="hidden" id="hidpaystatus" value="<?php echo e($order->payment_status); ?>" />
+                          </div>
+                          
+                          <div style="display: none" class="trackno form-group">
+                            <input type="text" id="track_no" name="track_no" value="" class="form-control" title="Enter Order Tracking NO" placeholder="Enter Order Tracking No" autocomplete="off"/>
+                          </div>
+
+                          <div class="col-md-1 apply-submit d-flex justify-content-right" style="display: none">
+                            <button type="submit" class="btn btn-success btn-flat" style="float: right;">Apply</button>
+                          </div>
+                      </div>
+                    </div>
+
+                  </form>
+                  <div class="row">
+                      <div class="col-lg-6 col-md-6 col-sm-6">
+                        <img src="<?php echo e(asset('frontend/assets/images/logo/nithitex-logo-large.png')); ?>" class="img-responsive" alt="" width="50%"/>
+                      </div>
+                      <div class="col-lg-6 col-md-6 col-sm-6 d-flex align-items-center justify-content-center text-right">
+                          <h6 class="pr-5"><span>Order ID: </span><?php echo e($order->invoice_no); ?></h6>
+                      </div>
+                  </div>
+                  <div class="container">
+                  <div class="row mt-3">
+                      <div class="col-lg-8 col-md-8 col-sm-8">
+                        <b>Billing Address:</b>
+                          <p class="font">
+                            <strong>Name:</strong> <?php echo e($order->name); ?><br>
+                            <strong>Email:</strong> <?php echo e($order->email); ?> <br>
+                            <strong>Phone:</strong> <?php echo e($order->phone); ?> <br>
+                            
+                          </p>
+                      </div>
+                      <div class="col-lg-4 col-md-4 col-sm-4" style="float-right;">
+                          <b>Shipping Address:</b>
+                            <p class="font">
+                              <strong>Name:</strong> <?php echo e($order->name); ?><br>
+                              <strong>Email:</strong> <?php echo e($order->email); ?> <br>
+                              <strong>Phone:</strong> <?php echo e($order->phone); ?> <br>
+                              <strong>Address:</strong> <?php echo e($order->door_no); ?>,<?php echo e($order->street_address); ?>.<?php echo e($order->city_name); ?>.<?php echo e($order->state_name); ?> <br>
+                              <strong>Post Code:</strong> <?php echo e($order->pin_code); ?>
+
+                            </p>
+                        </div>
+                    </div>
+                  </div>
+                  </div>
+
+                  <div class="container">
+                        <h6 class="mb-3 mt-5" style="color: green;">Order Summary</h6>
+                      <div class="row">
+                          <div class="col-lg-12 col-md-12 col-sm-12">
+                            <table class="table" width="100%">
+                              <thead style="background-color: green;">
+                                <tr>
+                                  <th style="color:#FFF;">Image</th>
+                                  <th style="color:#FFF;">Product Name</th>
+                                  <th style="color:#FFF;">Quantity</th>
+                                  <th style="color:#FFF;">Price</th>
+                                </tr>
+                              </thead>
+                              <tbody>                 
+                                <?php $__currentLoopData = $orderItem; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                  <tr>
+                                    <td><img src="<?php echo e(asset($item->product->product_image)); ?>" height="50px;" width="50px;"></td>
+                                    <td> <?php echo e($item->product->product_name); ?></td>            
+                                    <td> <?php echo e($item->qty); ?></td>
+                                    <td> ₹ <?php echo e($item->price); ?> </td>
+                                  </tr>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                              </tbody>               
+                            </table>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="container">
+                    <div class="row mt-3">
+                        <div class="col-lg-9 col-md-9 col-sm-9">
+                          
+                        </div>
+                        <div class="col-lg-3 col-md-3 col-sm-3" style="float-right;">
+                            
+                              <p class="font">
+                                <h5><span style="color: green;">Subtotal:</span><span style="font-family: DejaVu Sans; sans-serif;">&#8377;</span><?php echo e($order->sub_total); ?></h5>
+                                <h5><span style="color: green;">Shipping Charge:</span><span style="font-family: DejaVu Sans; sans-serif;">&#8377;</span><?php echo e($order->shipping_charge); ?></h5>
+                                <h5><span style="color: green;">Total:</span><span style="font-family: DejaVu Sans; sans-serif;">&#8377;</span><?php echo e($order->amount); ?></h5>
+                              </p>
+                        </div>
+                    </div>
+                </div>
+
+                </div>
+            </div>
+        </div>
+</div>
+<?php $__env->stopSection(); ?>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+  var dropdownFieldValue=$("#hidstatus").val();
+  var paydropdownFieldValue=$("#hidpaystatus").val();
+
+    if (dropdownFieldValue == "picked") {
+        $('.trackno').show();
+          }  
+      else {
+        $('.trackno').hide();
+        }
+        if (dropdownFieldValue == "delivered") {
+        $('.apply-submit').hide();
+          }  
+      else {
+        $('.apply-submit').show();
+        }
+          
+    if (dropdownFieldValue == "delivered") {
+        $('#order_status').attr('disabled', true);
+    }
+    else {
+        $('#order_status').attr('disabled', false);
+    }  
+     $('#order_status').on('change', function () {      
+        if ($('#order_status option:selected').val() == "picked") {
+            $('.trackno').show();
+        }  
+        else {
+            $('.trackno').hide();
+        }  
+        });
+ });
+</script>
+<?php echo $__env->make('admin.admin_master', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\xampp\htdocs\Laravel-Nithitex\nithitex\resources\views/backend/orders/orders_details.blade.php ENDPATH**/ ?>

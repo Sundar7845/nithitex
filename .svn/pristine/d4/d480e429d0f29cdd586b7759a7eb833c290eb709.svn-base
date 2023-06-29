@@ -1,0 +1,39 @@
+<?php $__currentLoopData = $shop_all_products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $shop_all_product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+<div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+    <div class="single-product-wrap mb-35">
+        <div class="product-img product-img-zoom mb-15">
+            <a href="<?php echo e(url('product/details/'.$shop_all_product->id.'/'.$shop_all_product->product_slug )); ?>">
+                <img src="<?php echo e(asset($shop_all_product->product_image)); ?>" alt="">
+            </a>
+            <div class="product-action-2 tooltip-style-2">
+                <button title="Wishlist"><i class="icon-heart" id="<?php echo e($shop_all_product->id); ?>" onclick="addToWishList(this.id)"></i></button>
+                
+                    <button type="button" data-bs-toggle="modal" data-bs-target="#exampleModal" id="<?php echo e($shop_all_product->id); ?>" onclick="productView(this.id)">
+                    <i class="icon-size-fullscreen icons"></i></button>
+            </div>
+        </div>
+        <div class="product-content-wrap-2 text-center">
+           
+            <h3><a href="<?php echo e(url('product/details/'.$shop_all_product->id.'/'.$shop_all_product->product_slug )); ?>"><?php echo e($shop_all_product->product_name); ?></a></h3>
+            <div class="product-price-2">
+                <span>₹ <?php echo e($shop_all_product->product_discount); ?></span>
+            </div>
+        </div>
+        <div class="product-content-wrap-2 product-content-position text-center">
+           
+            <h3><a href="<?php echo e(url('product/details/'.$shop_all_product->id.'/'.$shop_all_product->product_slug )); ?>"><?php echo e($shop_all_product->product_name); ?></a></h3>
+            <div class="product-price-2">
+                <span>₹ <?php echo e($shop_all_product->product_discount); ?></span>
+            </div>
+            <div class="pro-add-to-cart">
+                <input type="hidden" id="product_id" value="<?php echo e($shop_all_product->id); ?>">
+                <span id="pname" hidden><?php echo e($shop_all_product->product_name); ?></span>
+                <input type="hidden" id="qty" value="1">
+                <button title="Add to Cart"  type="submit" id="<?php echo e($shop_all_product->id); ?>" onclick="addToCartsimple(this.id)" >Add To Cart</button>
+                <a href="<?php echo e(url('product/buynow/'.$shop_all_product->id)); ?>" style="border-radius: 50px;" class="btn btn-danger buy">Buy Now </a>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+<?php /**PATH D:\xampp\htdocs\Laravel-Nithitex\nithitex\resources\views/frontend/product/shop_grid_view.blade.php ENDPATH**/ ?>

@@ -1,0 +1,50 @@
+
+<?php $__env->startSection('content'); ?>
+<?php $__env->startSection('title'); ?>
+India's No 1 Online Saree Shop - Nithitex
+<?php $__env->stopSection(); ?>
+        <div class="breadcrumb-area bg-gray">
+            <div class="container">
+                <div class="breadcrumb-content text-center">
+                    <ul>
+                        <li>
+                            <a href="index.html">Home</a>
+                        </li>
+                        <li class="active">Wishlist </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="cart-main-area pt-115 pb-120">
+            <div class="container">
+                <h3 class="cart-page-title">Wishlist</h3>
+                <div class="row">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-12">
+                        <form action="#">
+                            <div class="table-content table-responsive cart-table-content">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Image</th>
+                                            <th>Product Name</th>
+                                            <th>Unit Price</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="wishlist">
+                                        
+                                       
+                                    </tbody>
+                                </table>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+<?php $__env->stopSection(); ?>
+           
+
+
+
+<?php echo $__env->make('frontend.main_master', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\xampp\htdocs\Laravel-Nithitex\nithitex\resources\views/frontend/wishlist/view_wishlist.blade.php ENDPATH**/ ?>

@@ -1,0 +1,144 @@
+<?php
+
+namespace App\Http\Controllers\SELLER;
+
+use App\Http\Controllers\Controller;
+use App\Models\Cart;
+use App\Models\State;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\str;
+use Razorpay\Api\Api;
+
+class CheckoutController extends Controller
+{
+  private $razorpayId = "rzp_test_bUcyzVDkdztvea";
+  private $razorpaykey = "s1BI0kDv3nEaTehLWoLPQQGJ";
+  // private $razorpayId ="rzp_live_BPqOpSftyPAkey";
+  // private $razorpaykey="NZrNloxbjs4zifCkpf0kgUOj";
+
+  public function CheckoutStore(Request $request)
+  {
+    $shipping = State::where('state_name', $request->state_name)->first();
+    if ($request->payment_method == 'razorpay') {
+      $cart_true = $request->cart_true;
+
+      $shipping_charge = $shipping->shipping_charge;
+
+      if ($request->cart_true == 1) {
+        $totQty = Cart::where('user_id', Auth::user()->id)->sum('qty');
+        $cartTotal = Cart::where('user_id', Auth::user()->id)->sum('total');
+        $shipping_charge = ($totQty * $shipping_charge);
+        $sub_total = $cartTotal;
+        $total_amount = $cartTotal + $shipping_charge;
+      } else {
+        $totQty = $request->buy_now_product_qty;
+        $shipping_charge = ($totQty * $shipping_charge);
+        $buy_price = $request->buy_now_price;
+        $sub_total = $buy_price;
+        $total_amount = $buy_price + $shipping_charge;
+      }
+
+      $receiptId = Str::random(20);
+      $api = new Api($this->razorpayId, $this->razorpaykey);
+      $order = $api->order->create([
+        'receipt' => $receiptId,
+        'amount' => $total_amount * 100,
+        'currency' => 'INR',
+      ]);
+
+      $response = [
+        "order_id"    => $order['id'],
+        "razorpayId"  => $this->razorpayId,
+        "amount"      => $total_amount * 100,
+        "name"        => $request->shipping_name,
+        'currency'    => 'INR',
+        "email"       => $request->shipping_email,
+        "phone"       => $request->shipping_phone
+      ];
+
+      $data = array();
+      $data['shipping_name'] = $request->shipping_name;
+      $data['cart_true'] = $request->cart_true;
+      $data['buy_now_product_name'] = $request->buy_now_product_name;
+      $data['buy_now_product_qty'] = $request->buy_now_product_qty;
+      $data['buy_now_product_id'] = $request->buy_now_product_id;
+      $data['buy_now_price'] = $request->buy_now_price;
+      $data['total_amount'] = $total_amount;
+      $data['sub_total'] = $sub_total;
+      $data['shipping_charge'] = $shipping_charge;
+      $data['shipping_email'] = $request->shipping_email;
+      $data['shipping_phone'] = $request->shipping_phone;
+      $data['alternative_number'] = $request->alternative_number;
+      $data['door_no']     =    $request->door_no;
+      $data['street_address'] = $request->street_address;
+      $data['city_name'] = $request->city_name;
+      $data['state_name'] = $request->state_name;
+      $data['pin_code'] = $request->pin_code;
+      $data['coupon_discount'] = $request->hddiscount;
+      $data['coupon_id'] = $request->hdcoupon_id;
+      $carts = Cart::where('user_id', Auth::user()->id)->get();
+      $cartTotal = Cart::where('user_id', Auth::user()->id)->sum('total');
+
+      $cartTotal = $cartTotal + $shipping_charge;
+      $coupon_discount = $request->hddiscount;
+      $coupon_id = $request->hdcoupon_id;
+
+      return view('seller.payment.razorpay_button', compact('response', 'data', 'carts', 'cartTotal','coupon_discount','coupon_id'));
+    } else {
+
+      $data = array();
+      $cart_true = $request->cart_true;
+      $shipping = State::where('state_name', $request->state_name)->first();
+      $shipping_charge = $shipping->cod_charge;
+      $data['shipping_name'] = $request->shipping_name;
+      $data['shipping_email'] = $request->shipping_email;
+      $data['shipping_phone'] = $request->shipping_phone;
+      $data['collectcash_amount'] = $request->collectcash_amount;
+      $data['margin_amount'] = $request->hdmargin_amount;
+      $data['alternative_number'] = $request->alternative_number;
+      $data['door_no'] = $request->door_no;
+      $data['street_address'] = $request->street_address;
+      $data['city_name'] = $request->city_name;
+      $data['state_name'] = $request->state_name;
+      $data['pin_code'] = $request->pin_code;
+      $data['coupon_discount'] = $request->hddiscount;
+      $data['coupon_id'] = $request->hdcoupon_id;
+      $carts = Cart::where('user_id', Auth::user()->id)->get();
+      $cartTotal = Cart::where('user_id', Auth::user()->id)->sum('total');
+      $margin_amount = $request->hdmargin_amount;
+      if ($request->cart_true == 1) {
+        $totQty = Cart::where('user_id', Auth::user()->id)->sum('qty');
+      } else {
+        $totQty = $request->buy_now_product_qty;
+      }
+      $shipping_charge = ($totQty * $shipping_charge);
+      $cart_total = $cartTotal + $shipping_charge + $margin_amount;
+      $buy_product_name = $request->buy_now_product_name;
+      $buy_product_qty = $request->buy_now_product_qty;
+      $buy_price = $request->buy_now_price;
+      $buy_product_id = $request->buy_now_product_id;
+      $buy_total = $buy_price + $shipping_charge;
+      $coupon_discount = $request->hddiscount;
+      $coupon_id = $request->hdcoupon_id;
+
+      return view('seller.payment.cash', compact(
+        'data',
+        'cartTotal',
+        'carts',
+        'cart_true',
+        'buy_product_name',
+        'buy_product_qty',
+        'buy_price',
+        'buy_product_id',
+        'cart_total',
+        'buy_total',
+        'shipping_charge',
+        'margin_amount',
+        'totQty',
+        'coupon_discount',
+        'coupon_id'
+      ));
+    }
+  }
+}

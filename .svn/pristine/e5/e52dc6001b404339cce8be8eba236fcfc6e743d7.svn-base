@@ -1,0 +1,352 @@
+@extends('frontend.main_master')
+@section('content')
+@section('title')
+    India's No 1 Online Saree Shop - Nithitex
+@endsection
+<div class="breadcrumb-area bg-gray">
+    <div class="container">
+        <div class="breadcrumb-content text-center">
+            <ul>
+                <li>
+                    <a href="/">Home</a>
+                </li>
+                <li class="active">Checkout </li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="checkout-main-area pt-50 pb-50">
+    <div class="container">
+        <div class="checkout-wrap pt-30">
+
+            <form class="register-form" action="{{ route('checkout.store') }}" method="POST">
+                @csrf
+                <div class="row">
+                    <div class="col-lg-7">
+                        <div class="billing-info-wrap mr-50">
+                            <h3>Billing Details</h3>
+                            <div class="row">
+
+                                <div class="col-lg-12">
+                                    <div class="billing-info mb-20">
+                                        <label>Name <span class="text-danger">*</span></label>
+                                        <input type="text" name="shipping_name" id="shipping_name"
+                                            value="{{ Auth::user()->name }}" required=""
+                                            placeholder="Enter Your Name" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="col-lg-12 col-md-12">
+                                    <div class="billing-info mb-20">
+                                        <label>Email Address <span class="text-danger">*</span></label>
+                                        <input type="text" name="shipping_email" id="shipping_email"
+                                            value="{{ Auth::user()->email }}" required=""
+                                            placeholder="Enter Your E-mail" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="col-lg-12 col-md-12">
+                                    <div class="billing-info mb-20">
+                                        <label>Phone <span class="text-danger">*</span></label>
+
+                                        <input type="text" value="{{ Auth::user()->phone }}" name="shipping_phone"
+                                            id="shipping_phone" required="" placeholder="Enter Mobile Number"
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="col-lg-12 col-md-12">
+                                    <div class="billing-info mb-20">
+                                        <label>Alternative Phone Number</label>
+                                        <input type="text" name="alternative_number" id="alternative_number"
+                                            placeholder="Enter Alternative Mobile Number" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="col-lg-12">
+                                    <div class="billing-info mb-20">
+                                        <label>Door No. / Flat No. / Floor No.<span class="text-danger">*</span></label>
+                                        <input class="billing-address" value="{{ Auth::user()->door_no }}"
+                                            name="door_no" id="door_no"
+                                            placeholder="Enter Door No. / Flat No. / Floor No." type="text"
+                                            required="" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="col-lg-12">
+                                    <div class="billing-info mb-20">
+                                        <label>Street Address <span class="text-danger">*</span></label>
+                                        <input class="billing-address" name="street_address" id="street_address"
+                                            placeholder="Enter Street Address"
+                                            value="{{ Auth::user()->street_address }}" type="text" required=""
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="col-lg-12">
+                                    <div class="billing-info mb-20">
+                                        <label>State <span class="text-danger">*</span></label>
+                                        <select id="state_name" name="state_name" class="billing-address"
+                                            title="Please Select State" required onchange="bindShippingCost();">
+                                            <option value="">Select State</option>
+                                            @foreach ($state as $item)
+                                                <option value="{{ $item->state_name }}"
+                                                    shipping="{{ $item->shipping_charge }}"
+                                                    cod="{{ $item->cod_charge }}"
+                                                    @if (auth::user()->state_name == $item->state_name) selected @endif>
+                                                    {{ $item->state_name }}</option>
+                                            @endforeach
+                                        </select>
+                                        @error('state_name')
+                                            <span class="text-danger">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="col-lg-12">
+                                    <div class="billing-info mb-20">
+                                        <label>City<span class="text-danger">*</span></label>
+                                        <input class="billing-address" name="city_name" id="city_name"
+                                            placeholder="Enter City Name" type="text"
+                                            value="{{ Auth::user()->city_name }}" required="" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="col-lg-12 col-md-12">
+                                    <div class="billing-info mb-20">
+                                        <label>Pin Code <span class="text-danger">*</span></label>
+                                        <input type="text" name="pin_code" id="pin_code"
+                                            value="{{ Auth::user()->pin_code }}" required=""
+                                            placeholder="Enter Pincode" autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="cart_true" id="cart_true" value="{{ $cart_true }}">
+                    <div class="col-lg-5">
+                        <div class="your-order-area">
+                            <h3>Your order</h3>
+                            <div class="your-order-wrap gray-bg-4">
+                                <div class="your-order-info-wrap">
+                                    <div class="your-order-info">
+                                        <ul>
+                                            <li>Product <span>Total</span></li>
+                                        </ul>
+                                    </div>
+                                    @if ($cart_true == 1)
+                                        @php
+                                            $totQty = 0;
+                                        @endphp
+
+                                        @foreach ($carts as $item)
+                                            <div class="your-order-middle">
+                                                <ul>
+                                                    <li>{{ $item->name }} X {{ $item->qty }}
+                                                        <span>₹{{ round($item->price) }} </span></li>
+                                                </ul>
+                                            </div>
+
+                                            @php
+                                                $totQty += $item->qty;
+                                            @endphp
+                                        @endforeach
+                                        <div class="your-order-info order-subtotal">
+                                            <ul>
+                                                <li>Subtotal <span>₹{{ round($cartTotal) }} </span>
+                                                    <input type="hidden" name="hdCartTotal" id="hdCartTotal"
+                                                        value="{{ $cartTotal }}">
+                                                </li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="your-order-info order-shipping">
+                                            <ul>
+                                                <li>Coupon Applied<span id="tot_coupon_amount"></span>
+                                                    <input type="hidden" name="hdtotcouponamount"
+                                                        id="hdtotcouponamount" value="0">
+                                                </li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="your-order-info order-shipping">
+                                            <ul>
+                                                <li>Shipping ( * {{ $totQty }} ) <span
+                                                        id="tot_shipping_cart">₹0</span>
+                                                    <input type="hidden" name="hdtotalqty" id="hdtotalqty"
+                                                        value="{{ $totQty }}">
+                                                    <input type="hidden" name="hdtotshippingcharge"
+                                                        id="hdtotshippingcharge" value="0">
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div class="your-order-info order-total">
+                                            <ul>
+                                                <input id="hdtotal_Cart" name="hdtotal_Cart" type="hidden"
+                                                    value="{{ round($cartTotal) }}">
+                                                <li>Total <span id="total"
+                                                        name="total">₹{{ round($cartTotal) }} </span></li>
+                                            </ul>
+                                        </div>
+                                    @else
+                                        <div class="your-order-middle">
+                                            <ul>
+                                                <li>{{ $product->product_name }} X {{ $quantity }}
+                                                    <span>₹{{ round($buynow_price) }} </span></li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="your-order-info order-subtotal">
+                                            <ul>
+                                                <li>Subtotal <span>₹{{ round($buynow_price) }} </span></li>
+                                                <input type="hidden" name="hdCartTotal" id="hdCartTotal"
+                                                    value="{{ $buynow_price }}">
+                                            </ul>
+                                        </div>
+
+                                        <div class="your-order-info order-shipping">
+                                            <ul>
+                                                <li>Coupon Applied<span id="tot_coupon_amount"></span>
+                                                    <input type="hidden" name="hdtotcouponamount"
+                                                        id="hdtotcouponamount" value="0">
+                                                </li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="your-order-info order-shipping">
+                                            <ul>
+                                                <li>Shipping ( * {{ $quantity }} )<span
+                                                        id="tot_shipping_buynow"></span>
+                                                    <input type="hidden" name="hdtotalqty" id="hdtotalqty"
+                                                        value="{{ $quantity }}">
+                                                    <input type="hidden" name="hdtotshippingcharge"
+                                                        id="hdtotshippingcharge" value="0">
+                                                </li>
+                                            </ul>
+                                        </div>
+
+                                        <input type="hidden" name="buy_now_price" id="buy_now_price"
+                                            value="{{ $buynow_price }}">
+                                        <input type="hidden" name="buy_now_product_id" id="buy_now_product_id"
+                                            value="{{ $product_id }}">
+                                        <input type="hidden" name="buy_now_product_name" id="buy_now_product_name"
+                                            value="{{ $product->product_name }}">
+                                        <input type="hidden" name="buy_now_product_qty" id="buy_now_product_qty"
+                                            value="{{ $quantity }}">
+                                        <div class="your-order-info order-total">
+                                            <ul>
+                                                <input id="hdtotal_amount" name="hdtotal_amount" type="hidden"
+                                                    value="{{ round($buynow_price) }}">
+                                                <li>Total <span id="total"
+                                                        name="total">₹{{ round($buynow_price) }} </span></li>
+                                            </ul>
+                                        </div>
+                                    @endif
+
+                                </div>
+
+                                <div class="mt-3">
+                                    <p>If you have coupon code, please enter it here!</p>
+                                    <div class="input-group">
+                                        <input type="hidden" name="coupon" value="OFFER360" id="hddiscount">
+                                        <input type="text" class="form-control" id="coupon_code" name="coupon_code"
+                                            placeholder="Enter coupon code"/>
+                                        <span class="mt-1"><button type="button" title="Apply Coupon"
+                                                class="btn btn-flat btn-dark" onclick="couponcalculation();" id="btnCoupon">Apply
+                                                Coupon</button></span>
+                                    </div>
+                                </div>
+
+                                <div class="payment-method">
+                                    <div class="pay-top sin-payment sin-payment-3">
+                                        <input id="payment-method-4" class="input-radio" type="radio"
+                                            value="razorpay" name="payment_method">
+                                        <label for="payment-method-4">Online Payment</label>
+                                        <div class="payment-box payment_method_bacs online hidden">
+                                            <input type="hidden" name="hdShipping_online" id="hdShipping_online"
+                                                value="0">
+                                            <p>FOR ONLINE PAYMENT THE SHIPPING COST IS <span id="shipping_online"
+                                                    class="text-danger"
+                                                    style="font-weight:bolder">{{ $shipping_charge }}</span></p>
+                                        </div>
+                                    </div>
+                                    <div class="pay-top sin-payment">
+                                        <input id="payment-method-3" class="input-radio" type="radio"
+                                            value="cash" name="payment_method">
+                                        <label for="payment-method-3">Cash on delivery </label>
+                                        <div class="payment-box payment_method_bacs cod hidden">
+                                            <input type="hidden" name="hdShipping_cod" id="hdShipping_cod"
+                                                value="0">
+                                            <p>We are giving correct market price but if the payment is in Cash on
+                                                Delivery means cost will be high if you feel is high Cash on Delivery
+                                                means please reduce the number of COD options. Kindly choose a reliable
+                                                online payment reduced very low cost of shipping platform.</p>
+                                            <span id="shipping_cod" class="text-danger"
+                                                style="font-weight:bolder">{{ $cod_charge }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="Place-order">
+                                <button type="submit" class="btn btn-flat btn-dark" title="Place Order" disabled
+                                    id="btnPlaceOrder">Place Order</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection
+<script>
+    function bindShippingCost() {
+        var shipping_online = $("#state_name option:selected").attr("shipping");
+        var shipping_cod = $("#state_name option:selected").attr("cod");
+        var totQty = $("#hdtotalqty").val();
+        var cartTotal = $("#hdCartTotal").val();
+        var tot_shipping_charge = 0;
+        var tot_cod_charge = 0;
+        var netTotal = 0;
+        var discountage_percentage = $("#hddiscount").val();
+
+        var discount_amt = cartTotal * discountage_percentage / 100;
+
+        $("#tot_coupon_amount").html('-' + '₹'+ discount_amt);
+
+        shipping_online = (shipping_online == undefined ? 0 : shipping_online);
+        $("#hdShipping_online").val(shipping_online);
+        $("#shipping_online").html('₹' + shipping_online);
+
+        shipping_cod = (shipping_cod == undefined ? 0 : shipping_cod);
+        $("#hdShipping_cod").val(shipping_cod);
+        $("#shipping_cod").html('₹' + shipping_cod);
+
+        if ($('input[name="payment_method"]:checked').val() == "razorpay") {
+            tot_shipping_charge = parseInt(totQty * shipping_online);
+            netTotal = parseInt(cartTotal) + parseInt(tot_shipping_charge) - parseInt(discount_amt);
+            $("#hdtotshippingcharge").val(tot_shipping_charge);
+            $("#tot_shipping_buynow").html('₹' + tot_shipping_charge);
+            $("#tot_shipping_cart").html('₹' + tot_shipping_charge);
+            $("#btnPlaceOrder").prop("disabled", false);
+        } else if ($('input[name="payment_method"]:checked').val() == "cash") {
+            tot_cod_charge = parseInt(totQty * shipping_cod);
+            netTotal = parseInt(cartTotal) + parseInt(tot_cod_charge) - parseInt(discount_amt);
+            $("#hdtotshippingcharge").val(tot_cod_charge);
+            $("#tot_shipping_buynow").html('₹' + tot_cod_charge);
+            $("#tot_shipping_cart").html('₹' + tot_cod_charge);
+            $("#btnPlaceOrder").prop("disabled", false);
+        }
+
+        $("#total").html('₹' + parseInt(netTotal));
+        $("#hdtotal_amount").val(parseInt(netTotal));
+        $("#hdtotal_Cart").val(parseInt(netTotal));
+    }
+   
+    function couponcalculation() {
+        $.ajax({
+            type: 'POST',
+            url: '/coupon/discount',
+            dataType: 'json',
+            data: {
+                "coupon_code": $("#coupon_code").val()
+            },
+            success: function(data) {
+                $("#hddiscount").val(data.coupon);
+            }
+        });
+        bindShippingCost();
+    }
+</script>

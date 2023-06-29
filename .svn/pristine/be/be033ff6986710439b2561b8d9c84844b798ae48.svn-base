@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <meta charset="utf-8">
+  <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Admin | Nithitex India's No 1 Online Saree Shop</title>
+	<link rel="stylesheet" href="<?php echo e(asset('backend/assets/vendors/core/core.css')); ?>">
+	<link rel="stylesheet" href="<?php echo e(asset('backend/assets/vendors/bootstrap-datepicker/bootstrap-datepicker.min.css')); ?>">
+	<link rel="stylesheet" href="<?php echo e(asset('backend/assets/fonts/feather-font/css/iconfont.css')); ?>">
+	<link rel="stylesheet" href="<?php echo e(asset('backend/assets/vendors/flag-icon-css/css/flag-icon.min.css')); ?>">
+	<link rel="stylesheet" href="<?php echo e(asset('backend/assets/css/demo_1/style.css')); ?>">
+  <link rel="shortcut icon" href="<?php echo e(asset('backend/assets/images/favicon.png')); ?>"/>
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css" >
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css" >
+  <link rel="stylesheet" href="<?php echo e(asset('backend/assets/vendors/datatables.net-bs4/dataTables.bootstrap4.css')); ?>">
+  <link rel="stylesheet" href="<?php echo e(asset('backend/date/daterangepicker.css')); ?>">
+  <link rel="shortcut icon" href="<?php echo e(asset('backend/assets/favicon.png')); ?>"/>
+</head>
+
+<body class="sidebar-dark">
+  <div class="main-wrapper">
+      <?php echo $__env->make('admin.body.navbar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+      <?php echo $__env->make('admin.body.sidebar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+    <div class="page-wrapper">
+     <?php echo $__env->make('admin.body.head', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+      <div>
+        <?php echo $__env->yieldContent('admin'); ?>
+      </div>
+          <?php echo $__env->make('admin.body.footer', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+    </div>
+  </div>
+
+<script src="<?php echo e(asset('backend/assets/vendors/core/core.js')); ?>"></script>
+<script src="<?php echo e(asset('backend/assets/vendors/chartjs/Chart.min.js')); ?>"></script>
+<script src="<?php echo e(asset('backend/assets/vendors/jquery.flot/jquery.flot.js')); ?>"></script>
+<script src="<?php echo e(asset('backend/assets/vendors/jquery.flot/jquery.flot.resize.js')); ?>"></script>
+<script src="<?php echo e(asset('backend/assets/vendors/bootstrap-datepicker/bootstrap-datepicker.min.js')); ?>"></script>
+<script src="<?php echo e(asset('backend/assets/vendors/apexcharts/apexcharts.min.js')); ?>"></script>
+<script src="<?php echo e(asset('backend/assets/vendors/progressbar.js/progressbar.min.js')); ?>"></script>
+<script src="<?php echo e(asset('backend/assets/vendors/feather-icons/feather.min.js')); ?>"></script>
+<script src="<?php echo e(asset('backend/assets/js/template.js')); ?>"></script>
+<script src="<?php echo e(asset('backend/assets/js/dashboard.js')); ?>"></script>
+<script src="<?php echo e(asset('backend/assets/js/datepicker.js')); ?>"></script>
+
+<!-- Summernote -->
+<script src="<?php echo e(asset('backend/plugins/summernote/summernote-bs4.min.js')); ?>"></script>
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<!-- plugin js for this page -->
+<script src="<?php echo e(asset('backend/assets/vendors/datatables.net/jquery.dataTables.js')); ?>"></script>
+<script src="<?php echo e(asset('backend/assets/vendors/datatables.net-bs4/dataTables.bootstrap4.js')); ?>"></script>
+<!-- custom js for this page -->
+<script src="<?php echo e(asset('backend/assets/js/data-table.js')); ?>"></script>
+<!-- end custom js for this page -->
+<script type="text/javascript" src="<?php echo e(asset('backend/date/jquery.daterangepicker.js')); ?>"></script>
+<script>
+ <?php if(Session::has('message')): ?>
+ var type = "<?php echo e(Session::get('alert-type','info')); ?>"
+ switch(type){
+    case 'info':
+    toastr.info(" <?php echo e(Session::get('message')); ?> ");
+    break;
+    case 'success':
+    toastr.success(" <?php echo e(Session::get('message')); ?> ");
+    break;
+    case 'warning':
+    toastr.warning(" <?php echo e(Session::get('message')); ?> ");
+    break;
+    case 'error':
+    toastr.error(" <?php echo e(Session::get('message')); ?> ");
+    break; 
+ }
+ <?php endif; ?>
+ 
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+<script src="<?php echo e(asset('backend/dist/js/code.js')); ?>"></script>
+
+<script type="text/javascript">
+  $.ajaxSetup({
+      headers:{
+          'X-CSRF-TOKEN':$('meta[name="csrf-token"]').attr('content')
+      }
+  })
+</script>
+
+</body>
+</html>
+<?php /**PATH D:\xampp\htdocs\Laravel-Nithitex\nithitex\resources\views/admin/admin_master.blade.php ENDPATH**/ ?>

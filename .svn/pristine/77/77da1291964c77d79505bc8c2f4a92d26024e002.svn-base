@@ -1,0 +1,709 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Mail\ForgetPassword;
+use App\Models\Cart;
+use App\Models\Category;
+use App\Models\Colors;
+use App\Models\ShopInformation;
+use App\Models\Slider;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\Seller;
+use App\Models\ShippingCharge;
+use App\Models\State;
+use App\Models\User;
+use Illuminate\Http\Request;
+use App\Traits\ResponseAPI;
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Mail; 
+
+class ApiController extends Controller
+{
+    use ResponseAPI;
+
+    public function slider()
+    {
+        try {
+            $responseData = [];
+
+            $responseData['slider'] = [];
+            $slider = Slider::get();
+            foreach ($slider as $item) {
+                $sliderDetails['id'] = $item->id;
+                $sliderDetails['slider_image'] = url($item->slider_image);
+                array_push($responseData['slider'], $sliderDetails);
+            }
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function contact()
+    {
+        try {
+            $responseData = [];
+
+            $responseData['contact'] = [];
+            $contact = ShopInformation::get();
+            foreach ($contact as $item) {
+                $contactDetails['address_line_1'] = $item->address_line_1;
+                $contactDetails['address_line_2'] = $item->address_line_2;
+                $contactDetails['pincode'] = $item->pincode;
+                $contactDetails['mobile'] = $item->mobile_number;
+                $contactDetails['email'] = $item->email;
+
+                array_push($responseData['contact'], $contactDetails);
+            }
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function orderList()
+    {
+        try {
+            $responseData = [];
+
+            $responseData['order'] = [];
+            $order = Order::where('user_id', Auth::user()->id)->orderby('id', 'DESC')->get();
+
+            foreach ($order as $item) {
+                $orderDetails['id'] = $item->id;
+                $orderDetails['order_id'] = $item->invoice_no;
+
+                $orders = OrderItem::where('order_id', $item->id)->pluck('product_id')->first();
+                $orders_qty = OrderItem::where('order_id', $item->id)->pluck('qty')->first();
+
+                $products = Product::where('id', $orders)->pluck('product_name')->first();
+                $product_img = Product::where('id', $orders)->pluck('product_image')->first();
+
+                $orderDetails['product_id'] = $orders;
+                $orderDetails['qty'] = $orders_qty;
+                $orderDetails['product_name'] = $products;
+                $orderDetails['product_image'] = url($product_img);
+
+                $orderDetails['order_date'] = $item->order_date;
+                $orderDetails['total'] = $orders_qty * $item->amount;
+                $orderDetails['status'] = $item->status;
+
+                array_push($responseData['order'], $orderDetails);
+            }
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function orderDetail($order_id)
+    {
+        try {
+            $responseData['orders'] = [];
+
+            $orders = Order::where('id', $order_id)->first();
+            $invoicedetails['id'] = $orders->id;
+            $invoicedetails['order_id'] = $orders->invoice_no;
+            $invoicedetails['order_date'] = $orders->order_date;
+            $invoicedetails['status'] = $orders->status;
+            $invoicedetails['payment_type'] = $orders->payment_type;
+            $invoicedetails['payment_status'] = $orders->payment_status;
+            $invoicedetails['amount'] = $orders->amount;
+            $invoicedetails['shipping_charge'] = $orders->shipping_charge;
+            $invoicedetails['is_returned'] = $orders->return_order;
+
+            array_push($responseData['orders'], $invoicedetails);
+
+            $responseData['order_details'] = [];
+            $order = OrderItem::where('order_id', $order_id)->get();
+            foreach ($order as $item) {
+                $orderDetails['product_id'] = $item->product_id;
+                $orderDetails['qty'] = $item->qty;
+
+                $products = Product::where('id', $item->product_id)->get();
+                foreach ($products as $product) {
+                    $orderDetails['product_name'] = $product->product_name;
+                    $orderDetails['product_price'] = $product->product_discount;
+                    $orderDetails['product_image'] = url($product->product_image);
+                }
+
+                array_push($responseData['order_details'], $orderDetails);
+            }
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function returnOrder(Request $request, $id)
+    {
+        Order::find($id)->update([
+            'return_date' => Carbon::now()->format('d F Y'),
+            'return_reason' => $request->return_reason,
+            'return_order' => 1,
+        ]);
+
+        $message = "success";
+        return response()->json(['status' => true, 'message' => $message], 200);
+    }
+
+    public function returnOrderList()
+    {
+        try {
+            $responseData = [];
+
+            $responseData['return_orders'] = [];
+            $orders = Order::where('user_id', Auth::user()->id)
+                ->where('status', 'returned')
+                ->orderBy('id', 'DESC')
+                ->get();
+            foreach ($orders as $value) {
+
+                $returnOrderDetails['order_id'] = $value->id;
+                $returnOrderDetails['date'] = $value->created_at->format("d/m/Y");
+                $returnOrderDetails['order_number'] = $value->order_number;
+                $returnOrderDetails['qty'] = $value->tot_Qty;
+                $returnOrderDetails['total'] = $value->sub_total;
+                $returnOrderDetails['shipping_charge'] = $value->shipping_charge;
+                $returnOrderDetails['amount'] = $value->amount;
+                $returnOrderDetails['payment_type'] = $value->payment_type;
+                $returnOrderDetails['return_reason'] = $value->return_reason;
+                $returnOrderDetails['status'] = $value->status;
+
+                array_push($responseData['return_orders'], $returnOrderDetails);
+            }
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function cancelOrders()
+    {
+        try {
+            $responseData = [];
+
+            $responseData['cancel_orders'] = [];
+            $orders = Order::where('user_id', Auth::user()->id)
+                ->where('status', 'cancelled')
+                ->orderBy('id', 'DESC')
+                ->get();
+            foreach ($orders as $value) {
+
+                $cancelOrderDetails['order_id'] = $value->id;
+                $cancelOrderDetails['date'] = $value->created_at->format("d/m/Y");
+                $cancelOrderDetails['order_number'] = $value->order_number;
+                $cancelOrderDetails['qty'] = $value->tot_Qty;
+                $cancelOrderDetails['total'] = $value->sub_total;
+                $cancelOrderDetails['shipping_charge'] = $value->shipping_charge;
+                $cancelOrderDetails['amount'] = $value->amount;
+                $cancelOrderDetails['payment_type'] = $value->payment_type;
+                $cancelOrderDetails['status'] = $value->status;
+
+                array_push($responseData['cancel_orders'], $cancelOrderDetails);
+            }
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function UserPasswordUpdate(Request $request)
+    {
+
+        $validator = validator::make($request->all(), [
+            'oldpassword' => 'required',
+            'password' => 'required|confirmed',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status' => false, 'message' => implode(",", $validator->errors()->all())], 400);
+        }
+        $hashedPassword = Auth::user()->password;
+        if (Hash::check($request->oldpassword, $hashedPassword)) {
+            $user = User::find(Auth::id());
+            $user->password = Hash::make($request->password);
+            $user->save();
+
+            $message = "Password Changed Successfully";
+            return response()->json(['status' => true, 'message' => $message], 200);
+        } else {
+            $message = "Password Does Not Matched";
+            return response()->json(['status' => false, 'message' => $message], 400);
+        }
+    }
+
+    public function UserProfileStore(Request $request)
+    {
+        $data = User::find(Auth::user()->id);
+        $data->name = $request->name;
+        $data->phone = $request->phone;
+        $data->door_no = $request->door_no;
+        $data->street_address = $request->street_address;
+        $data->city_name = $request->city_name;
+        $data->state_name = $request->state_name;
+        $data->pin_code = $request->pin_code;
+
+        if ($request->file('profile_photo_path')) {
+            $file = $request->file('profile_photo_path');
+            @unlink(public_path('upload/user_images/' . $data->profile_photo_path));
+            $filename = date('YmdHi') . $file->getClientOriginalName();
+            $file->move(public_path('upload/user_images'), $filename);
+            $data['profile_photo_path'] = $filename;
+        }
+
+        Seller::where('email', Auth::user()->email)->update([
+            'shop_name' => $request->shop_name,
+            'bank_name' => $request->bank_name,
+            'bank_account_name' => $request->bank_account_name,
+            'bank_account_number' => $request->bank_account_number,
+            'bank_ifsc' => $request->bank_ifsc
+        ]);
+
+        $data->save();
+        $message = "Profile Updated Successfully";
+        return response()->json(['status' => true, 'message' => $message], 200);
+    }
+
+    public function placeOrder(Request $request)
+    {
+        try {
+            $cart_total = Cart::where('user_id', Auth::user()->id)->sum('total');
+            $shipping = ShippingCharge::where('shipping_payment_method', 'online')->first();
+            $shipping_charge = $shipping->shipping_amount;
+            $total_amount = $cart_total + $shipping_charge;
+
+            $order_id = Order::create([
+                'user_id' => Auth::user()->id,
+                'userrole_id' => 1,
+                'door_no' => $request->door_no,
+                'street_address' => $request->street_address,
+                'city_name' => $request->city_name,
+                'state_name' => $request->state_name,
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'pin_code' => $request->pin_code,
+                'payment_type' => 'Cash On Delivery',
+                'payment_status' => 'Unpaid',
+                'currency' =>  'INR',
+                'amount' => $total_amount,
+                'sub_total' => $cart_total,
+                'shipping_charge' => $shipping_charge,
+                'invoice_no' => 'NITHTX' . mt_rand(10000000, 99999999),
+                'order_date' => Carbon::now()->format('d F Y'),
+                'order_month' => Carbon::now()->format('F'),
+                'order_year' => Carbon::now()->format('Y'),
+                'status' => 'pending',
+                'created_at' => Carbon::now(),
+
+            ]);
+
+            // $invoice = Order::findOrFail($order_id->id);
+            // $data = [
+            //     'invoice_no' => $invoice->invoice_no,
+            //     'amount' => $total_amount,
+            //     'name' => $invoice->name,
+            //     'email' => $invoice->email
+            // ];
+
+            // $order = Order::with('user')->where('id', $invoice->id)->where('user_id', Auth::id())->first();
+            // $orderItem = OrderItem::with('product')->where('order_id', $invoice->id)->orderBy('id', 'DESC')->get();
+
+            // $pdf = PDF::loadView('frontend.user.order.order_invoice', compact('order', 'orderItem'));
+            // Mail::to($request->email)->send(new OrderMail($pdf));
+            // $content = $pdf->download()->getOriginalContent();
+
+            // Storage::disk('local')->put($invoice->invoice_no . '.pdf', $content);
+
+            // $save_url = 'invoice/' . $invoice->invoice_no . '.pdf';
+
+            // Order::where('id', $invoice->id)->update([
+            //     'invoice' => $save_url
+            // ]);
+
+            Http::post('http://pay4sms.in/sendsms/?token=9a2edf41bc2760c4c5bb0b592eaf7bfb&credit=2&sender=NITHTX&message=Thank you for your purchase!. Your order is placed and its pending and will be Confirmed shortly. Nithitex. &number=' . $request->phone . '');
+
+            $carts = Cart::where('user_id', Auth::user()->id)->get();
+            foreach ($carts as $cart) {
+                OrderItem::create([
+                    'order_id' => $order_id->id,
+                    'product_id' => $cart->product_id,
+                    'qty' => $cart->qty,
+                    'price' => $cart->price,
+                    'created_at' => Carbon::now(),
+
+                ]);
+
+                $product = Product::where('id', $cart->product_id)->first();
+                $product->current_stock = $product->current_stock - $cart->qty;
+                $product->update();
+            }
+
+            $rowId = Cart::where('user_id', Auth::user()->id)->get();
+            Cart::destroy($rowId);
+
+            $message = "Order Placed Successfully";
+            return response()->json(['status' => true, 'message' => $message], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function colorList()
+    {
+        try {
+            $responseData = [];
+            $responseData['color_list'] = [];
+            $color_details = Colors::get();
+            foreach ($color_details as $item) {
+
+                $colorDetails['color_id'] = $item->id;
+                $colorDetails['color_code'] = $item->color_code;
+                $colorDetails['color_name'] = $item->color_name;
+
+                array_push($responseData['color_list'], $colorDetails);
+            }
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function userProfileGet()
+    {
+        try {
+            $responseData = [];
+            $responseData['user_profile'] = [];
+            $user_details = User::where('id', Auth::user()->id)->get();
+            foreach ($user_details as $item) {
+
+                $seller = Seller::where('email', Auth::user()->email)->first();
+                $state = State::where('state_name', $item->state_name)->first();
+                $userDetails['user_id'] = $item->id;
+                $userDetails['user_name'] = $item->name;
+                $userDetails['email'] = $item->email;
+                $userDetails['phone'] = $item->phone;
+                $userDetails['door_no'] = $item->door_no;
+                $userDetails['street_name'] = $item->street_address;
+                $userDetails['city'] = $item->city_name;
+                $userDetails['state'] = $item->state_name;
+                $userDetails['state_id'] = $state->id;
+                $userDetails['short_name'] = $state->iso2;
+                $userDetails['shipping_charge'] = $state->shipping_charge;
+                $userDetails['cod_charge'] = $state->cod_charge;
+                $userDetails['pincode'] = $item->pin_code;
+
+                if ($seller) {
+                    $userDetails['shop_name'] = $seller->shop_name;
+                    $userDetails['bank_name'] = $seller->bank_name;
+                    $userDetails['bank_account_name'] = $seller->bank_account_name;
+                    $userDetails['bank_account_number'] = $seller->bank_account_number;
+                    $userDetails['bank_ifsc'] = $seller->bank_ifsc;
+                }
+
+                if ($item->profile_photo_path) {
+                    $userDetails['user_image'] =
+                        url('upload/user_images/' . $item->profile_photo_path);
+                } else {
+                    $userDetails['user_image'] = null;
+                }
+
+                array_push($responseData['user_profile'], $userDetails);
+            }
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function purchaseHistory()
+    {
+        try {
+            $responseData = [];
+            $responseData['purchase_history'] = [];
+            $order_details = Order::join('order_items', 'order_items.order_id', 'orders.id')
+                ->join('products', 'products.id', 'order_items.product_id')
+                ->where('orders.status', '=', 'delivered')
+                ->where('user_id', Auth::user()->id)
+                ->select('orders.*', 'order_items.product_id', 'products.product_image', 'products.product_name')
+                ->orderby('id', 'DESC')
+                ->get();
+
+            foreach ($order_details as $item) {
+
+                $orderDetails['order_id'] = $item->id;
+                $orderDetails['product_id'] = $item->product_id;
+                $orderDetails['product_name'] = $item->product_name;
+                $orderDetails['inovice_no'] = $item->invoice_no;
+                $orderDetails['date'] = $item->order_date;
+                $orderDetails['amount'] = $item->amount;
+                $orderDetails['status'] = $item->status;
+                $orderDetails['payment'] = $item->payment_type;
+                $orderDetails['product_image'] = url($item->product_image);
+
+                array_push($responseData['purchase_history'], $orderDetails);
+            }
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function invoiceDownload($order_id)
+    {
+        try {
+            $responseData = [];
+            $responseData['order_invoice'] = [];
+            $invoicedetails = Order::where('id', $order_id)->first();
+
+            $orderDetails['invoice'] = url($invoicedetails->invoice);
+
+            array_push($responseData['order_invoice'], $orderDetails);
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function orderSummary()
+    {
+        try {
+            $responseData = [];
+            $responseData['order_summary'] = [];
+            $order_details = Cart::select('products.id', 'carts.qty', 'carts.total', 'products.product_name', 'carts.price')
+                ->join('products', 'carts.product_id', '=', 'products.id')
+                ->where('user_id', '=', Auth::user()->id)
+                ->get();
+
+            foreach ($order_details as $item) {
+
+                $orderDetails['product_id'] = $item->id;
+                $orderDetails['qty'] = $item->qty;
+                $orderDetails['product_name'] = $item->product_name;
+                $orderDetails['price'] = $item->price;
+
+                array_push($responseData['order_summary'], $orderDetails);
+            }
+            $responseData['orders_total'] = [];
+            $total = Cart::where('user_id', Auth::user()->id)->sum('total');
+
+            $totalDetails['subtotal'] = $total;
+            $totalDetails['total'] = $total;
+
+            array_push($responseData['orders_total'], $totalDetails);
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function state()
+    {
+        try {
+            $responseData = [];
+
+            $responseData['state'] = [];
+            $state = State::orderBy('state_name', 'ASC')->get();
+            foreach ($state as $item) {
+                $stateDetails['state_id'] = $item->id;
+                $stateDetails['state_name'] = $item->state_name;
+                $stateDetails['short_name'] = $item->iso2;
+                $stateDetails['shipping_charge'] = $item->shipping_charge;
+                $stateDetails['cod_charge'] = $item->cod_charge;
+                array_push($responseData['state'], $stateDetails);
+            }
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function offers(Request $request)
+    {
+        try {
+            $responseData = [];
+
+            $responseData['offer'] = [];
+            $user_id = array($request->user_id);
+
+
+            if ($user_id) {
+                $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+                $query->leftJoin('wishlists', function ($join) {
+                    $join->on('wishlists.product_id', '=', 'products.id')
+                        ->where("wishlists.user_id", '=', DB::raw('?'));
+                })->setBindings(array_merge($query->getBindings(), $user_id));
+                $offer = $query->where('is_offers', '=', 1)
+                    ->where('current_stock', '>', 0)
+                    ->limit(20)->inRandomOrder()->get();
+            } else {
+                $offer = Product::where('is_offers', '=', 1)
+                    ->where('current_stock', '>', 0)
+                    ->limit(20)->inRandomOrder()->get();
+            }
+
+
+            foreach ($offer as $item) {
+                $offerDetails['product_id'] = $item->id;
+
+                $category = Category::where('id', $item->category_id)->pluck('category_name')->first();
+                // $feature = product::where('id',$item->id)->pluck('product_image')->first();
+
+                $offerDetails['category_id'] = $item->category_id;
+                $offerDetails['category_name'] = $category;
+                $offerDetails['product_name'] = $item->product_name;
+                $offerDetails['product_price'] = $item->product_price;
+                if ($this->role($request->user_id)) {
+                    $offerDetails['product_discount'] = $item->product_discount;
+                } else {
+                    $offerDetails['product_discount'] = $item->seller_discount;
+                }
+                $offerDetails['product_image'] = url($item->product_image);
+                $offerDetails['is_favourite'] = $item->is_favourite;
+
+                array_push($responseData['offer'], $offerDetails);
+            }
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function trackOrder(Request $request)
+    {
+        try {
+            $responseData = [];
+
+            $responseData['tracking_details'] = [];
+            $track = Order::where('track_number',$request->tracking_number)->first();
+
+                $trackingDetails['invoice_no'] = $track->invoice_no;
+                $trackingDetails['order_number'] = $track->order_number;
+                $trackingDetails['order_date'] = $track->order_date;
+                $trackingDetails['name'] = $track->name;
+                $trackingDetails['city_name'] = $track->city_name;
+                $trackingDetails['state_name'] = $track->state_name;
+                $trackingDetails['phone'] = $track->phone;
+                $trackingDetails['payment_type'] = $track->payment_type;
+                $trackingDetails['amount'] = $track->amount;
+                $trackingDetails['status'] = $track->status;
+                array_push($responseData['tracking_details'], $trackingDetails);
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function forgetPasswordLinkGenerate(Request $request)
+    {
+        try{
+            $validator = validator::make($request->all(), [
+                'email' => 'required|email|exists:users'
+            ],[
+                'email.exists' => 'No user was found with this e-mail address'
+                ]);
+            if ($validator->fails()) {
+                return response()->json(['status' => false, 'message' => implode(",", $validator->errors()->all())], 400);
+            }
+            
+            $token = Str::random(64);
+    
+            DB::table('password_resets')->insert([
+                'email' => $request->email, 
+                'token' => $token, 
+                'created_at' => Carbon::now()
+            ]);
+    
+            Mail::to($request->email)->send(new ForgetPassword ($token), ['token' => $token], function($message) use($request){
+                $message->to($request->email);
+                $message->subject('Reset Password');
+            });
+            $message = "We have e-mailed your password reset link!";
+            return response()->json(['status' => true, 'message' => $message ,'token'=>$token], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function resetPassword(Request $request,$token)
+    {
+        try{
+            $validator = validator::make($request->all(), [
+                'email' => 'required|email|exists:sellers',
+                'password' => 'required|string|min:8|confirmed',
+                'password_confirmation' => 'required'
+            ],[
+            'email.exists' => 'No user was found with this e-mail address'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['status' => false, 'message' => implode(",", $validator->errors()->all())], 400);
+            }
+            
+            $updatePassword = DB::table('user_password_resets')
+                                ->where([
+                                'email' => $request->email, 
+                                'token' => $request->token
+                                ])
+                                ->first();
+
+            if(!$updatePassword){
+                $message = "Invalid token!";
+                return response()->json(['status' => true, 'message' => $message], 200);
+            }
+
+            User::where('email', $request->email)
+                        ->update(['password' => Hash::make($request->password)]);
+
+            DB::table('user_password_resets')->where(['email'=> $request->email])->delete();
+
+            $message = "Your password has been changed!";
+            return response()->json(['status' => true, 'message' => $message], 200);
+
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function getDefaultContent()
+    {
+        try {
+            $responseData = [];
+
+            // $responseData['defaultContentDetails'] = [];
+               $online = "FOR ONLINE PAYMENT THE SHIPPING COST IS";
+               $cod = "We are giving correct market price but if the payment is in Cash on Delivery means cost will be high if you feel is high Cash on Delivery means please reduce the number of COD options. Kindly choose a reliable online payment reduced very low cost of shipping platform.";
+                $defaultContentDetails['onile_desc'] = $online;
+                $defaultContentDetails['status'] = $cod;
+
+                // array_push($responseData['defaultContentDetails'], $defaultContentDetails);
+
+            return response()->json(['online' => $online, 'cod' => $cod], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+}

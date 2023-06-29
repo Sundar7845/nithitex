@@ -1,0 +1,94 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\User;
+use Illuminate\Http\Request;
+use App\Traits\ResponseAPI;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Response;
+
+class NewArrivalController extends Controller
+{
+    use ResponseAPI;
+
+    public function newArrival(Request $request)
+    {
+        try {
+            $responseData=[];
+    
+            $responseData['new_arrival']=[];
+            $user_id = array($request->user_id);
+            if($user_id){
+                $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+                $query->leftJoin('wishlists',function($join) {
+                                        $join->on('wishlists.product_id','=','products.id')
+                                        ->where("wishlists.user_id",'=',DB::raw('?'));
+                                    })->setBindings(array_merge($query->getBindings(),$user_id));
+                $feature = $query->where('is_offers','=',0)
+                                ->where('is_newArrival','=',1)
+                                ->where('current_stock','>',0)
+                                ->limit(20)->inRandomOrder()
+                                ->get();
+        }
+        else {
+            $feature = Product::where('is_newArrival','=',1)
+                    ->where('is_offers','=',0)
+                    ->where('current_stock','>',0)
+                    ->limit(20)->inRandomOrder()->get();
+        }
+            foreach ($feature as $item) {
+                $newArrivalDetails['product_id'] = $item->id;
+    
+                $category = Category::where('id',$item->category_id)->pluck('category_name')->first();
+                $feature = product::where('id',$item->id)->pluck('product_image')->first();
+    
+                $newArrivalDetails['category_id'] = $item->category_id;
+                $newArrivalDetails['category_name'] = $category;
+                $newArrivalDetails['product_name'] = $item->product_name;
+                $newArrivalDetails['product_price'] = $item->product_price;
+                if($this->role($request->user_id)){
+                    $productDetails['product_discount'] = $item->product_discount;
+                }else{
+                    $productDetails['product_discount'] = $item->seller_discount;
+                }
+                $newArrivalDetails['product_image'] = url($feature);
+                $newArrivalDetails['is_favourite'] = $item->is_favourite;
+                array_push($responseData['new_arrival'],$newArrivalDetails);
+            }
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+        private function role($user_id)
+        {
+            return User::where('id',$user_id)->pluck('userrole_id')->first();
+        }
+
+    // public function newArrivalImage($id)
+    // {
+    //     try {
+    //     $feature = product::where('id',$id)->pluck('product_image')->first();
+    //     $path = public_path($feature);
+    //     if (!File::exists($path))
+    // {
+    //     abort(404);
+    // }
+    //     $file = File::get($path);
+    //     $type = File::mimeType($path);
+    //     $response = Response::make($file, 200);
+    //     $response->header("Content-Type", $type);
+    //     return $response;
+    // } catch (\Exception $e) {
+    //     return $this->error($e->getMessage(), $e->getCode());
+    // }
+    // }
+}

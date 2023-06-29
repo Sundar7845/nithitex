@@ -1,0 +1,23 @@
+$(document).ready(function () {
+    $("#sort").on("change", function () {
+        this.form.submit();
+    });
+});
+
+$(document).ready(function () {
+    $("#color_sort").on("change", function () {
+        this.form.submit();
+    });
+});
+
+    // $(document).ready(function(item){
+    //     $("#active"+ item).on('change',function(){
+    //         this.form.submit();
+    //     });
+    // });
+
+function docouponupdate(item) {
+    if (confirm("Are you sure you want to Change the Status?")) {
+        $("#coupon_submit" + item).submit();
+    }
+}

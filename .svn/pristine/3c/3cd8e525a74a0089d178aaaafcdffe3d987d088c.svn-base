@@ -1,0 +1,459 @@
+<?php
+
+namespace App\Http\Controllers\Backend;
+
+use App\Http\Controllers\Controller;
+use App\Models\Category;
+use App\Models\Colors;
+use App\Models\Product;
+use App\Models\ProductMultipleImage;
+use Illuminate\Http\Request;
+use App\ImageModel;
+use App\Models\Cart;
+use App\Models\Order;
+use App\Models\OrderItem;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Image;
+
+class ProductController extends Controller
+{
+    public function ProductView()
+    {
+        $colors = Colors::latest()->get();
+        $category = Category::latest()->get();
+        if (Auth::user()->hasPermissionTo('Add Products')) {
+			return view('backend.product.product_view', compact('colors', 'category'));
+		} else {
+			return view('401');
+		}  
+    }
+
+    public function getColorValue($color_id)
+    {
+        $colors = explode(',', $color_id);
+
+        $productcolor = Colors::whereIn('id', $colors)->get();
+
+        return response()->json(array(
+            'color' => $productcolor
+        ));
+    }
+
+
+    public function ProductStore(Request $request)
+    {
+        $request->validate([
+            'product_name' => 'required',
+            'ddlCategoryType' => 'required',
+            'stock' => 'required',
+            'product_sku'  => 'required|unique:products',
+            'multi_img' => 'required',
+            'price' => 'required|numeric',
+            'discountprice' => 'required|numeric',
+            'sellerdiscount' => 'required|numeric',
+            'shortdescription' => 'required',
+            'longdescription' => 'required',
+        ]);
+
+        $images = $request->file('multi_img');
+        $first = true;
+        foreach ($images as $img) {
+            $make_name = hexdec(uniqid()) . '.' . $img->getClientOriginalExtension();
+            if ($first) {
+                Image::make($img)->save('upload/products/thambnail/' . $make_name);
+                $save_url = 'upload/products/thambnail/' . $make_name;
+                $first = false;
+            }
+        }
+        $product_id = Product::insertGetId([
+            'product_name' => $request->product_name,
+            'product_slug' => strtolower(str_replace(' ', '-', $request->product_name)),
+
+            'category_id' => $request->ddlCategoryType,
+            'tags' => $request->tags,
+            'current_stock' =>  $request->stock,
+            'product_sku' => $request->product_sku,
+            'color_id' => $request->color,
+
+            'product_image' => $save_url,
+            'product_video_url' => $request->video_link,
+
+            'product_price' => $request->price,
+            'product_discount' => $request->discountprice,
+
+            'seller_price' => $request->price,
+            'seller_discount' => $request->sellerdiscount,
+
+            'short_description' => $request->shortdescription,
+            'long_description' => $request->longdescription,
+
+
+            'meta_title' => $request->metaname,
+            'meta_description' => $request->metadescription,
+            'meta_keywords' => $request->metakeywords,
+
+            'is_featured' => ($request->is_featured == 1 ? True : false),
+            'is_newArrival' => ($request->is_newArrival == 1 ? True : false),
+            'is_offers' => ($request->is_offers == 1 ? True : false),
+            'is_bestSelling' => ($request->is_bestSelling == 1 ? True : false),
+            'status' => 1
+        ]);
+
+        foreach ($images as $img) {
+            $make_name = hexdec(uniqid()) . '.' . $img->getClientOriginalExtension();
+            Image::make($img)->save('upload/products/multi-image/' . $make_name);
+            $uploadPath = 'upload/products/multi-image/' . $make_name;
+
+            ProductMultipleImage::insert([
+
+                'product_id' => $product_id,
+                'product_mult_image' => $uploadPath
+
+            ]);
+        }
+
+        $notification = array(
+            'message' => 'Product Created Successfully',
+            'alert-type' => 'success'
+        );
+
+        return redirect()->route('product.list')->with($notification);
+    }
+
+    public function ProductList()
+    {
+        $products = Product::with('category')->orderBy('id', 'DESC')->get();
+        if (Auth::user()->hasPermissionTo('All Products')) {
+			return view('backend.product.product_list', compact('products'));
+		} else {
+			return view('401');
+		}   
+    }
+
+    public function ProductEdit($id)
+    {
+        $multiImgs = ProductMultipleImage::where('product_id', $id)->get();
+        $categories = Category::latest()->get();
+        $colors = Colors::get();
+        $products = Product::findOrFail($id);
+        if (Auth::user()->hasPermissionTo('All Products')) {
+			return view('backend.product.product_edit', compact('categories', 'products', 'multiImgs', 'colors'));
+		} else {
+			return view('401');
+		}
+    }
+
+    public function ProductMultiImageDelete($id)
+    {
+        $oldimg = ProductMultipleImage::findOrFail($id);
+        @unlink($oldimg->product_mult_image);
+        ProductMultipleImage::findOrFail($id)->delete();
+
+        $notification = array(
+            'message' => 'Product Image Deleted Successfully',
+            'alert-type' => 'success'
+        );
+
+        return response($notification);
+    }
+
+    private function isProductImgExists($product_id)
+    {
+        $product = ProductMultipleImage::where('product_id', $product_id)->first();
+        if (!$product) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    public function ProductUpdate(Request $request)
+    {
+        $request->validate([
+            'product_name' => 'required',
+            'ddlCategoryType' => 'required',
+            'stock' => 'required',
+            'price' => 'required|numeric',
+            'product_sku'  => 'required|unique:products,product_sku,' . $request->id,
+            'discountprice' => 'required|numeric',
+            'sellerdiscount' => 'required|numeric',
+            'shortdescription' => 'required',
+            'longdescription' => 'required',
+        ]);
+
+        $old_product_discount = Product::where('id', $request->id)->pluck('product_discount')->first();
+        $old_seller_discount = Product::where('id', $request->id)->pluck('seller_discount')->first();
+
+        $product = Product::find($request->id);
+        $product->product_name = $request->product_name;
+        $product->product_slug = strtolower(str_replace(' ', '-', $request->product_name));
+        $product->category_id = $request->ddlCategoryType;
+        $product->color_id = $request->color;
+        $product->tags = $request->tags;
+        $product->current_stock = $request->stock;
+        $product->product_sku = $request->product_sku;
+        $product->product_video_url = $request->video_link;
+        $product->product_price = $request->price;
+        $product->product_discount = $request->discountprice;
+        $product->seller_price = $request->price;
+        $product->seller_discount = $request->sellerdiscount;
+        $product->short_description = $request->shortdescription;
+        $product->long_description = $request->longdescription;
+        $product->meta_title = $request->metaname;
+        $product->meta_description = $request->metadescription;
+        $product->meta_keywords = $request->metakeywords;
+        $product->is_featured = ($request->is_featured == 1 ? True : false);
+        $product->is_newArrival = ($request->is_newArrival == 1 ? True : false);
+        $product->is_offers = ($request->is_offers == 1 ? True : false);
+        $product->is_bestSelling = ($request->is_bestSelling == 1 ? True : false);
+        $product->status = 1;
+
+        $images = $request->file('multi_img');
+        if ($images) {
+            if (!$this->isProductImgExists($request->id)) {
+                $first = true;
+                foreach ($images as $img) {
+                    $make_name = hexdec(uniqid()) . '.' . $img->getClientOriginalExtension();
+                    if ($first) {
+                        Image::make($img)->save('upload/products/thambnail/' . $make_name);
+                        $product->product_image = 'upload/products/thambnail/' . $make_name;
+                        $first = false;
+                    }
+                }
+            }
+
+            foreach ($images as $img) {
+                $make_name = hexdec(uniqid()) . '.' . $img->getClientOriginalExtension();
+                Image::make($img)->save('upload/products/multi-image/' . $make_name);
+                $uploadPath = 'upload/products/multi-image/' . $make_name;
+
+                ProductMultipleImage::insert([
+
+                    'product_id' => $request->id,
+                    'product_mult_image' => $uploadPath
+
+                ]);
+            }
+        }
+
+        $product->save();
+        //Delete cart if product price is changed
+        if ($old_product_discount != $request->discountprice || $old_seller_discount != $request->sellerdiscount) {
+            Cart::where('product_id', $request->id)->delete();
+        }
+        $notification = array(
+            'message' => 'Product Updated  Successfully',
+            'alert-type' => 'success'
+        );
+
+        return redirect()->route('product.list')->with($notification);
+    }
+
+    public function ProductDelete($id)
+    {
+        $orderitem = OrderItem::where('product_id', $id)->get()->count();
+        if ($orderitem == 0) {
+            $product = Product::findOrFail($id);
+            @unlink($product->product_image);
+            Product::findOrFail($id)->delete();
+
+            $images = ProductMultipleImage::where('product_id', $id)->get();
+            foreach ($images as $img) {
+                @unlink($img->product_mult_image);
+                ProductMultipleImage::where('product_id', $id)->delete();
+            }
+
+            $notification = array(
+                'message' => 'Product Deleted Successfully',
+                'alert-type' => 'success'
+            );
+        } else {
+            $notification = array(
+                'message' => 'Delete Failed!. This product is reference with another instance.',
+                'alert-type' => 'error'
+            );
+        }
+        return redirect()->back()->with($notification);
+    }
+
+    public function ProductStock()
+    {
+        $products = Product::latest()->get();
+        if (Auth::user()->hasPermissionTo('Stock Maintenance')) {
+			return view('backend.product.product_stock', compact('products'));
+		} else {
+			return view('401');
+		} 
+    }
+
+    public function stockupdate(Request $request)
+    {
+        $id = $request->product_id;
+        Product::findOrFail($id)->update([
+            'current_stock' => $request->current_qty
+        ]);
+
+        $notification = array(
+            'message' => 'Product Quantity Updated Successfully',
+            'alert-type' => 'success'
+        );
+
+        return redirect()->back()->with($notification);
+    } // end mehtod 
+
+    // public function ReportSale()
+    // {
+    //     $products = Product::latest()->get();
+    //     $categories = Category::latest()->get();
+    //     return view('backend.report.report_sale', compact('products', 'categories'));
+    // }
+
+    // public function saleReport(Request $request)
+    // {
+    //     $startDate = $request->FromDate;
+    //     $endDate = $request->ToDate;
+
+    //     $salesorderitem = OrderItem::select('orders.order_date', 'orders.invoice_no', 'orders.amount', 'orders.payment_status', 'orders.payment_type', 'users.name', 'orders.user_id')
+    //         ->join('orders', 'orders.id', '=', 'order_items.order_id')
+    //         ->join('users', 'users.id', '=', 'orders.user_id')
+    //         ->where('orders.status', 'delivered')
+    //         ->whereBetween('orders.created_at', [$startDate, $endDate])
+    //         ->groupby('orders.order_date', 'orders.invoice_no', 'orders.amount', 'orders.payment_status', 'orders.payment_type', 'users.name', 'orders.user_id')
+    //         ->get();
+
+    //     return response()->json(array(
+    //         'data' => $salesorderitem
+    //     ));
+    // }
+
+    // public function ReportPending(Request $request)
+    // {
+    //     $products = Product::latest()->get();
+    //     $categories = Category::latest()->get();
+    //     return view('backend.report.report_pending', compact('products', 'categories'));
+    // }
+
+    // public function pendingReport(Request $request)
+    // {
+    //     $startDate = $request->FromDate;
+    //     $endDate = $request->ToDate;
+
+    //     $salesorderitem = OrderItem::select('orders.order_date', 'orders.invoice_no', 'orders.amount', 'orders.payment_status', 'orders.payment_type', 'users.name', 'orders.user_id')
+    //         ->join('orders', 'orders.id', 'order_items.order_id')
+    //         ->join('users', 'users.id', 'orders.user_id')
+    //         ->where('orders.status', 'pending')
+    //         ->whereBetween('orders.created_at', [$startDate, $endDate])
+    //         ->groupby('orders.order_date', 'orders.invoice_no', 'orders.amount', 'orders.payment_status', 'orders.payment_type', 'users.name', 'orders.user_id')
+    //         ->get();
+
+    //     return response()->json(array(
+    //         'data' => $salesorderitem
+    //     ));
+    // }
+
+    // public function ReportPicked(Request $request)
+    // {
+    //     $products = Product::latest()->get();
+    //     $categories = Category::latest()->get();
+    //     return view('backend.report.report_picked', compact('products', 'categories'));
+    // }
+
+    // public function PickedReport(Request $request)
+    // {
+    //     $startDate = $request->FromDate;
+    //     $endDate = $request->ToDate;
+
+    //     $salesorderitem = OrderItem::select('orders.order_date', 'orders.invoice_no', 'orders.amount', 'orders.payment_status', 'orders.payment_type', 'users.name', 'orders.user_id')
+    //         ->join('orders', 'orders.id', '=', 'order_items.order_id')
+    //         ->join('users', 'users.id', '=', 'orders.user_id')
+    //         ->whereBetween('orders.created_at', [$startDate, $endDate])
+    //         ->groupby('orders.order_date', 'orders.invoice_no', 'orders.amount', 'orders.payment_status', 'orders.payment_type', 'users.name', 'orders.user_id')
+    //         ->where('orders.status', 'picked')
+    //         ->get();
+
+    //     return response()->json(array(
+    //         'data' => $salesorderitem
+    //     ));
+    // }
+
+    // public function ReportCancel(Request $request)
+    // {
+    //     $products = Product::latest()->get();
+    //     $categories = Category::latest()->get();
+    //     return view('backend.report.report_cancel', compact('products', 'categories'));
+    // }
+
+    // public function CancelReport(Request $request)
+    // {
+    //     $startDate = $request->FromDate;
+    //     $endDate = $request->ToDate;
+
+    //     $salesorderitem = OrderItem::select('orders.order_date', 'orders.invoice_no', 'orders.amount', 'orders.payment_status', 'orders.payment_type', 'users.name', 'orders.user_id')
+    //         ->join('orders', 'orders.id', '=', 'order_items.order_id')
+    //         ->join('users', 'users.id', '=', 'orders.user_id')
+    //         ->whereBetween('orders.created_at', [$startDate, $endDate])
+    //         ->groupby('orders.order_date', 'orders.invoice_no', 'orders.amount', 'orders.payment_status', 'orders.payment_type', 'users.name', 'orders.user_id')
+    //         ->where('orders.status', 'cancelled')
+    //         ->get();
+
+    //     return response()->json(array(
+    //         'data' => $salesorderitem
+    //     ));
+    // }
+
+    // public function ReportReturn(Request $request)
+    // {
+    //     $products = Product::latest()->get();
+    //     $categories = Category::latest()->get();
+    //     return view('backend.report.report_return', compact('products', 'categories'));
+    // }
+
+    // public function ReturnReport(Request $request)
+    // {
+    //     $startDate = $request->FromDate;
+    //     $endDate = $request->ToDate;
+
+    //     $salesorderitem = OrderItem::select('orders.order_date', 'orders.invoice_no', 'orders.amount', 'orders.payment_status', 'orders.payment_type', 'users.name', 'orders.user_id')
+    //         ->join('orders', 'orders.id', '=', 'order_items.order_id')
+    //         ->join('users', 'users.id', '=', 'orders.user_id')
+    //         ->whereBetween('orders.created_at', [$startDate, $endDate])
+    //         ->groupby('orders.order_date', 'orders.invoice_no', 'orders.amount', 'orders.payment_status', 'orders.payment_type', 'users.name', 'orders.user_id')
+    //         ->where('orders.status', 'returned')
+    //         ->get();
+
+    //     return response()->json(array(
+    //         'data' => $salesorderitem
+    //     ));
+    // }
+
+    public function ReportOutofStock()
+    {
+        $products = Product::where('current_stock', 0)->latest()->get();
+        if (Auth::user()->hasPermissionTo('Out Of Stock')) {
+            return view('backend.report.out_of_stock', compact('products'));
+		} else {
+			return view('401');
+		} 
+    }
+
+    public function Reportstock()
+    {
+        $categories = Category::latest()->get();
+        if (Auth::user()->hasPermissionTo('Stock')) {
+            return view('backend.report.stock', compact('categories'));
+		} else {
+			return view('401');
+		}  
+    }
+
+    public function stockReport(Request $request)
+    {
+        $category_id = $request->category_id;
+        $product = Product::with('category')->where('current_stock', '!=', 0)->where('category_id', $category_id)->latest()->get();
+
+        return response()->json(array(
+            'data' => $product
+        ));
+    }
+}

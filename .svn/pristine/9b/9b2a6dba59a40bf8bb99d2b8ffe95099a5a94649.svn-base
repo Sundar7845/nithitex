@@ -1,0 +1,18 @@
+<?php
+    $id = Auth::user()->id;
+    $user = App\Models\User::find($id);
+?>
+
+
+<div class="col-lg-3 col-md-4">
+	<div class="myaccount-tab-menu nav">
+		<a href="<?php echo e(route('dashboard')); ?>" class="active" ><i class="fa fa-dashboard"></i>
+			Dashboard</a>
+		<a href="<?php echo e(route('user.profile')); ?>"><i class="fa fa-user"></i> Profile Update</a>
+		<a href="<?php echo e(route('change.password')); ?>"><i class="fa fa-unlock-alt"></i> Change Password</a>
+		<a href="<?php echo e(route('my.orders')); ?>" ><i class="fa fa-cart-arrow-down"></i> Orders</a>
+		<a href="<?php echo e(route('return.order.list')); ?>" ><i class="fa fa-exchange"></i> Return Orders</a>
+		<a href="<?php echo e(route('cancel.orders')); ?>"><i class="fa fa-ban"></i> Cancel Orders</a>
+		<a href="<?php echo e(route('user.logout')); ?>"><i class="fa fa-sign-out"></i> Logout</a>
+	</div>
+</div><?php /**PATH D:\xampp\htdocs\Laravel-Nithitex\nithitex\resources\views/frontend/common/user_sidebar.blade.php ENDPATH**/ ?>

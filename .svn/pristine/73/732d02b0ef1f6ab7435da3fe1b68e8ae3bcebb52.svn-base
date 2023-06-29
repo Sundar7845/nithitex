@@ -1,0 +1,99 @@
+<?php
+
+use App\Http\Controllers\API\ApiController;
+use App\Models\Product;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Contracts\Support\Jsonable;
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| is assigned the "api" middleware group. Enjoy building your API!
+|
+*/
+
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
+
+/*          <-------------------------USER------------------------->          */
+Route::post('register', [App\Http\Controllers\API\UserController::class, 'register']);
+Route::post('login', [App\Http\Controllers\API\UserController::class, 'login']);  
+Route::post('sendotp',[App\Http\Controllers\API\UserController::class, 'sendOTP']);
+Route::post('verifyotp',[App\Http\Controllers\API\UserController::class, 'verifyOTP']);   
+
+
+Route::get('categorylist',[App\Http\Controllers\API\CategoryController::class,'category']);
+
+Route::post('productsbycategory/{id}',[App\Http\Controllers\API\ProductController::class,'productsByCategory']);
+Route::post('feature/product',[App\Http\Controllers\API\FeatureController::class,'feature']);
+Route::post('best-selling/product',[App\Http\Controllers\API\BestsellingController::class,'bestSelling']);
+Route::post('new-arrival/product',[App\Http\Controllers\API\NewArrivalController::class,'newArrival']);
+Route::post('product/detail/{id}',[App\Http\Controllers\API\ProductController::class,'product']);
+Route::post('search/{search_value}',[App\Http\Controllers\API\ProductController::class,'search']);
+Route::get('contact',[App\Http\Controllers\API\ApiController::class,'contact']);
+Route::get('slider',[App\Http\Controllers\API\ApiController::class, 'slider']);
+Route::post('related/product/{id}',[App\Http\Controllers\API\ApiController::class, 'relatedProducts']);
+Route::post('latest/product/sort',[App\Http\Controllers\API\ApiController::class, 'latestSort']);
+Route::post('product/name/sort',[App\Http\Controllers\API\ApiController::class, 'nameSort']);
+Route::post('product/lth/sort',[App\Http\Controllers\API\ApiController::class, 'priceLowSort']);
+Route::post('product/htl/sort',[App\Http\Controllers\API\ApiController::class, 'priceHighSort']);
+Route::post('product/qlth/sort',[App\Http\Controllers\API\ApiController::class, 'priceQtyLowSort']);
+Route::post('product/qhtl/sort',[App\Http\Controllers\API\ApiController::class, 'priceQtyHighSort']);
+Route::post('color/sort/{color_id}',[App\Http\Controllers\API\ApiController::class, 'colorSort']);
+Route::get('color/list',[App\Http\Controllers\API\ApiController::class, 'colorList']);
+Route::get('statelist',[App\Http\Controllers\API\ApiController::class, 'state']);
+Route::post('offerlist',[App\Http\Controllers\API\ApiController::class, 'offers']);
+Route::post('allproducts',[App\Http\Controllers\API\ApiController::class, 'allProducts']);
+
+// Route::get('allproducts', function () {
+//     return Product::paginate();
+// });
+
+
+Route::group(['middleware' => ['auth:api']], function () {
+    Route::post('logout',[App\Http\Controllers\API\UserController::class, 'logout']);
+    Route::post('wishlist/add',[App\Http\Controllers\API\WishlistController::class,'addToWishlist']);
+    Route::get('wishlist/product',[App\Http\Controllers\API\WishlistController::class,'wishlistProducts']);
+    Route::post('cart/{id}',[App\Http\Controllers\API\CartController::class,'cart']);
+    Route::get('cart/delete/{id}',[App\Http\Controllers\API\CartController::class,'cartDelete']);
+    Route::get('get/cartlist',[App\Http\Controllers\API\CartController::class,'cartlist']);
+    Route::post('cart/increase/{id}',[App\Http\Controllers\API\CartController::class,'CartIncrement']);
+    Route::post('cart/decrease/{id}',[App\Http\Controllers\API\CartController::class,'CartDecrement']);
+    Route::get('order/list',[App\Http\Controllers\API\ApiController::class,'orderList']);
+    Route::post('order/{id}',[App\Http\Controllers\API\ApiController::class,'returnOrder']);
+    Route::get('return/orderlist',[App\Http\Controllers\API\ApiController::class,'returnOrderList']);
+    Route::get('cancel/orderlist',[App\Http\Controllers\API\ApiController::class,'cancelOrders']);
+    Route::post('/user/password/update',[App\Http\Controllers\API\ApiController::class, 'UserPasswordUpdate']);
+    Route::post('/user/profile',[App\Http\Controllers\API\ApiController::class, 'UserProfileStore']);
+    Route::post('checkout',[App\Http\Controllers\API\ApiController::class, 'placeOrder']);
+    Route::post('razorpay',[App\Http\Controllers\API\RazorpayController::class, 'razorpay']);
+    Route::get('order/details/{order_id}',[App\Http\Controllers\API\ApiController::class, 'orderDetail']);
+    Route::get('userprofile/list',[App\Http\Controllers\API\ApiController::class, 'userProfileGet']);
+    Route::get('purchase/history',[App\Http\Controllers\API\ApiController::class, 'purchaseHistory']);
+    Route::get('/invoice/download/{order_id}', [App\Http\Controllers\API\ApiController::class, 'invoiceDownload']);
+    Route::post('address/store',[App\Http\Controllers\API\ApiController::class, 'addressStore']);
+    Route::get('default/address/update/{id}',[App\Http\Controllers\API\ApiController::class, 'defaultUpdate']);
+    Route::get('default/address/delete/{id}',[App\Http\Controllers\API\ApiController::class, 'defaultDelete']);
+    Route::post('address/update/{id}',[App\Http\Controllers\API\ApiController::class, 'addressUpdate']);
+    Route::get('address/list',[App\Http\Controllers\API\ApiController::class, 'addressList']);
+    Route::get('order/summary',[App\Http\Controllers\API\ApiController::class, 'orderSummary']);
+    Route::get('specific/address/{address_id}',[App\Http\Controllers\API\ApiController::class, 'specificAddress']);
+    Route::post('payment/status',[App\Http\Controllers\API\RazorpayController::class, 'paymentStatus']);
+});
+
+/*      <------------------------------SELLER---------------------->     */
+
+Route::post('seller/register', [App\Http\Controllers\API\SellerController::class, 'register']);
+Route::post('seller/login', [App\Http\Controllers\API\SellerController::class, 'login']);
+
+Route::group(['middleware' => ['auth:api']], function () {
+    Route::post('seller/logout',[App\Http\Controllers\API\SellerController::class, 'logout']);
+    Route::post('seller/sendotp',[App\Http\Controllers\API\SellerController::class, 'sendOTP']);
+    Route::post('seller/verifyotp',[App\Http\Controllers\API\SellerController::class, 'verifyOTP']);
+    Route::post('seller/address/update',[App\Http\Controllers\API\SellerController::class, 'sellerAddressUpdate']);
+});

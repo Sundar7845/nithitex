@@ -1,0 +1,181 @@
+
+<?php $__env->startSection('content'); ?>
+
+<div class="breadcrumb-area bg-gray">
+    <div class="container">
+        <div class="breadcrumb-content text-center">
+            <ul>
+                <li>
+                    <a href="/">Home</a>
+                </li>
+                <li class="active">My Order </li>
+            </ul>
+        </div>
+    </div>
+</div>
+<!-- my account wrapper start -->
+<div class="my-account-wrapper pt-120 pb-120">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <!-- My Account Page Start -->
+                <div class="myaccount-page-wrapper">
+                    <!-- My Account Tab Menu Start -->
+                    <div class="row">
+                        <?php echo $__env->make('frontend.common.user_sidebar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+                        <!-- My Account Tab Menu End -->
+                        <!-- My Account Tab Content Start -->
+                        <div class="col-lg-9 col-md-8">
+                            <div class="row">
+                                <div class="col-lg-6 col-md-6 col-sm-6">
+                                  <img src="<?php echo e(asset('frontend/assets/images/logo/nithitex-logo-large.png')); ?>" class="img-responsive" alt="" width="60%"/>
+                                </div>
+                                <div class="col-lg-6 col-md-6 col-sm-6 d-flex align-items-center justify-content-center text-right">
+                                    <h5 class="pr-5"><span>Order ID: </span><?php echo e($order->invoice_no); ?></h5>
+                                </div>
+                            </div>
+
+                            <div class="container">
+                                <h5 class="mb-3 mt-5" style="color: green;">Order Summary</h5>
+                                        <div class="row mt-3">
+                                            <div class="col-lg-12 col-md-12 col-sm-12">
+                                                <table class="table" >
+                                                <thead style="background-color: green; color:#FFFFFF;">
+                                                    <tr>
+                                                    <th>Image</th>
+                                                    <th>Product Name</th>
+                                                    <th>Quantity</th>
+                                                    <th>Price</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>                 
+                                                    <?php $__currentLoopData = $orderItem; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                    <tr>
+                                                        <td><label for=""><img src="<?php echo e(asset($item->product->product_image)); ?>" height="50px;" width="50px;"> </label></td>
+                                                        <td><label for=""> <?php echo e($item->product->product_name); ?></label></td>            
+                                                        <td><label for=""> <?php echo e($item->qty); ?></label></td>
+                                                        <td><label for=""> ₹ <?php echo e($item->price); ?> </label></td>
+                                                    </tr>
+                                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                                </tbody>               
+                                                </table>
+                                            </div>
+                                        </div>
+                            </div>  
+                            <div class="container">
+                                <div class="row mt-3">
+                                    <div class="col-lg-8 col-md-8 col-sm-8">
+                                      
+                                    </div>
+                                    <div class="col-lg-4 col-md-4 col-sm-4" style="float-right;">
+                                        
+                                          <p class="font">
+                                            <h5><span style="color: green;">Subtotal:</span><span style="font-family: DejaVu Sans; sans-serif;">&#8377;</span><?php echo e($order->sub_total); ?></h5>
+                                            <h5><span style="color: green;">Shipping Charge:</span><span style="font-family: DejaVu Sans; sans-serif;">&#8377;</span><?php echo e($order->shipping_charge); ?></h5>
+                                            <h5><span style="color: green;">Total:</span><span style="font-family: DejaVu Sans; sans-serif;">&#8377;</span><?php echo e($order->amount); ?></h5>
+                                          </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="container">
+                                <div class="row mt-3">
+                                    <div class="col-lg-8 col-md-8 col-sm-8">
+                                      <b>Order Details:</b>
+                                        <p class="font">
+                                          <strong>Name:</strong> <?php echo e($order->name); ?><br>
+                                          <strong>Email:</strong> <?php echo e($order->email); ?> <br>
+                                          <strong>Phone:</strong> <?php echo e($order->phone); ?> <br>
+                                          <strong>Payment Type:</strong> <?php echo e($order->payment_type); ?> <br>
+                                          <strong>Payment Status:</strong> <?php echo e($order->payment_status); ?> <br>
+                                          <strong>Order Status:</strong> <label for=""> 
+                            
+                                            <?php if($order->status == '0'): ?>        
+                                                <span class="badge badge-pill badge-warning" style="background: #800080;"> Pending </span>
+                                                <?php elseif($order->status == '1'): ?>
+                                                 <span class="badge badge-pill badge-warning" style="background: #0000FF;"> Confirm </span>
+                                                  <?php elseif($order->status == '2'): ?>
+                                                 <span class="badge badge-pill badge-warning" style="background: #FFA500;"> Processing </span>
+                                        
+                                                  <?php elseif($order->status == '3'): ?>
+                                                 <span class="badge badge-pill badge-warning" style="background: #808000;"> Picked </span>
+                                        
+                                                  <?php elseif($order->status == '4'): ?>
+                                                 <span class="badge badge-pill badge-warning" style="background: #808080;"> Shipped </span>
+                                        
+                                                  <?php elseif($order->status == '5'): ?>
+                                                 <span class="badge badge-pill badge-warning" style="background: #008000;"> Delivered </span>
+                                                 <?php if($order->return_order == 1): ?> 
+                                                 <span class="badge badge-pill badge-warning" style="background:red;">Return Requested </span>
+                                      
+                                                <?php endif; ?>
+                                        
+                                                 <?php else: ?>
+                                          <span class="badge badge-pill badge-warning" style="background: #FF0000;"> Cancel </span>
+                                        
+                                              <?php endif; ?>
+                                        </label><br>
+                                      
+                                          
+                                          
+                                        </p>
+                                    </div>
+                                    <div class="col-lg-4 col-md-4 col-sm-4" style="float-right;">
+                                        <b>Shipping Address:</b>
+                                          <p class="font">
+                                            <strong>Name:</strong> <?php echo e($order->name); ?><br>
+                                            <strong>Email:</strong> <?php echo e($order->email); ?> <br>
+                                            <strong>Phone:</strong> <?php echo e($order->phone); ?> <br>
+                                            <strong>Address:</strong> <?php echo e($order->door_no); ?>,<?php echo e($order->street_address); ?>.<?php echo e($order->city_name); ?>.<?php echo e($order->state_name); ?> <br>
+                                            <strong>Post Code:</strong> <?php echo e($order->pin_code); ?>
+
+                                          </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                          
+
+                           
+                            <div class="container">
+                                <div class="row mt-3">
+                                    <div class="col-lg-4 col-md-4 col-sm-4" style="float-right;">
+                                        <?php if($order->status !== "5"): ?>
+
+                                        <?php else: ?>
+                                        <?php 
+                                        $order = App\Models\Order::where('id',$order->id)->where('return_reason','=',NULL)->first();
+                                        ?>
+                                
+
+                                
+                                        <?php if($order): ?>
+                                       
+                                        <form action=" <?php echo e(route('return.order',$order->id)); ?>" method="post">
+                                        <?php echo csrf_field(); ?>
+                                
+                                        <div class="form-group">
+                                            <b> Order Return Reason:</b>
+                                            <textarea name="return_reason" id="Return Reason" placeholder="" class="form-control" cols="30" rows="05"></textarea>    
+                                        </div><br>
+                                            <button type="submit" class="btn btn-danger">Order Return</button>
+                                        
+                                        </form>
+                                        <?php else: ?>
+                                        <span class="badge badge-pill badge-warning" style="background: red">You Have send return request for this product</span>
+                                        <?php endif; ?> 
+                                        <?php endif; ?>       
+                                    </div>
+                                </div>
+                            </div>
+
+                            
+                        </div> <!-- My Account Tab Content End -->
+                    </div>
+                </div> <!-- My Account Page End -->
+            </div>
+        </div>
+    </div>
+</div>
+<!-- my account wrapper end -->
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('frontend.main_master', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\xampp\htdocs\Laravel-Nithitex\nithitex\resources\views/frontend/user/order/order_details.blade.php ENDPATH**/ ?>

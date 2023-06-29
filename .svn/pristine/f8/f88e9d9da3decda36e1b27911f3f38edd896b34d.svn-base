@@ -1,0 +1,111 @@
+<?php
+
+namespace App\Http\Controllers\backend;
+
+use App\Http\Controllers\Controller;
+use App\Models\About;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Intervention\Image\Facades\Image;
+
+class SettingsController extends Controller
+{
+    public function aboutView()
+    {
+        $about = About::first();
+        if (Auth::user()->hasPermissionTo('Company About')) {
+			return view('backend.settings.about-us.about-us',compact('about'));
+		} else {
+			return view('401');
+		}
+    }
+
+    public function store(Request $request)
+    {
+        $aboutcount = About::get()->count();
+        // dd($aboutcount);
+        $image = $request->file('about_image');
+        if($image){
+            $name_gen = hexdec(uniqid()).'.'.$image->getClientOriginalExtension();
+            Image::make($image)->save('upload/products/about-us/'.$name_gen);
+            $save_url = 'upload/products/about-us/'.$name_gen;
+        }
+        else {
+            $save_url = About::where('id',1)->pluck('about_image')->first();
+        }
+
+        // dd($save_url);
+        if($aboutcount > 0) {
+            About::findOrFail(1)->update([
+                'about_description' => $request->about_description,
+                'about_image' => $save_url
+            ]);
+        }
+        else {
+            About::create([
+                'about_description' => $request->about_description,
+                'about_image' => $save_url
+            ]);
+        }
+
+        $notification = array(
+			'message' => 'About Us '.(($aboutcount > 0) ? 'Updated' : 'Created').' Successfully',
+			'alert-type' => 'success'
+		);
+		
+		return redirect()->back()->with($notification);
+    }
+
+    public function edit($id)
+    {
+        $about = about::find($id);
+        if (Auth::user()->hasPermissionTo('Company About')) {
+			return view('backend.settings.about-us.about-us_edit',compact('about'));
+		} else {
+			return view('401');
+		} 
+    }
+
+    public function update(Request $request)
+    {
+        $request->validate([
+    		'about_description' => 'required',
+			'about_image' => 'image|mimes:jpeg,jpg,png,webp|min:1|max:2000'
+    	]);
+
+        $id = $request->id;
+        $oldImage = $request->old_image;
+
+        $about = About::find($id);
+        $about->about_description = $request->about_description;
+        if ($request->file('about_image')) {
+            @unlink($oldImage);
+            $image = $request->file('about_image');
+            $name_gen = hexdec(uniqid()).'.'.$image->getClientOriginalExtension();
+            Image::make($image)->save('upload/products/about-us/'.$name_gen);
+            $save_url = 'upload/products/about-us/'.$name_gen;	
+			$about->about_image = $save_url;
+           }  
+		$about->save();
+
+        $notification = array(
+			'message' => 'About Us Updated Successfully',
+			'alert-type' => 'success'
+		);
+
+		return redirect()->route('about.all')->with($notification);
+    }
+
+    public function delete($id)
+    {
+        $about = About::find($id);
+        $about->delete();
+
+        $notification = array(
+			'message' => 'About Us Deleted Successfully',
+			'alert-type' => 'error'
+		);
+
+		return redirect()->back()->with($notification);
+    }
+}

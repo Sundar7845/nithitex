@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\User;
+use Illuminate\Http\Request;
+use App\Traits\ResponseAPI;
+use Exception;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Response;
+
+class CategoryController extends Controller
+{
+    use ResponseAPI;
+
+    public function category()
+    {
+        try {
+            $responseData = [];
+
+            $responseData['category'] = [];
+            $category = Category::get();
+            foreach ($category as $item) {
+                $categoryDetails['id'] = $item->id;
+                $categoryDetails['category_name'] = $item->category_name;
+                $categoryDetails['category_image'] = url($item->category_image);
+                array_push($responseData['category'], $categoryDetails);
+            }
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+}

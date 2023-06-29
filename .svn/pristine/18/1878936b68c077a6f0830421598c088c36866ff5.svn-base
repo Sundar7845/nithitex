@@ -1,0 +1,150 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Product;
+use Illuminate\Http\Request;
+use App\Traits\ResponseAPI;
+use App\Models\Cart;
+use App\Models\ShippingCharge;
+use Illuminate\Support\Facades\Auth;
+
+class CartController extends Controller
+{
+    use ResponseAPI;
+
+    public function cart(Request $request, $id)
+    {
+        $product = Product::find($id);
+        $exists = Cart::where('user_id', Auth::id())->where('product_id', $id)->first();
+        if (!$exists) {
+            if ($product->product_discount == 0.00) {
+                $quantity = $request->qty;
+                $price = $product->product_price;
+                $cart_total = $price * $quantity;
+                Cart::Create([
+                    'product_id' => $id,
+                    'user_id' => Auth::user()->id,
+                    'name' => $product->product_name,
+                    'qty' => $request->qty,
+                    'price' => $product->product_price,
+                    'image' => $product->product_image,
+                    'total' => $cart_total
+                ]);
+            } else {
+                $quantity = $request->qty;
+                $price = $product->product_discount;
+                $cart_total = $price * $quantity;
+                Cart::Create([
+                    'product_id' => $id,
+                    'user_id' => Auth::user()->id,
+                    'name' => $product->product_name,
+                    'qty' => $request->qty,
+                    'price' => $product->product_discount,
+                    'image' => $product->product_image,
+                    'total' => $cart_total
+                ]);
+
+                $message = "Cart Stored Successfully";
+                return response()->json(['status' => true, 'message' => $message], 200);
+            }
+        } else {
+            return response()->json(['status' => false, 'error' => 'Item Already Presented On Your Cart']);
+        }
+    }
+
+    public function cartList()
+    {
+        $responseData = [];
+        $responseData['cart'] = [];
+
+        Cart::join('products', 'products.id', 'carts.product_id')
+            ->where('user_id', Auth::user()->id)
+            ->where('current_stock', '<=', 0)
+            ->select('carts.*', 'products.current_stock')
+            ->delete();
+
+        $carts = Cart::join('products', 'products.id', 'carts.product_id')
+            ->where('user_id', Auth::user()->id)
+            ->where('current_stock', '>', 0)
+            ->select('carts.*', 'products.current_stock', 'products.product_image')
+            ->get();
+
+        $cart_total = Cart::join('products', 'products.id', 'carts.product_id')
+            ->where('user_id', Auth::user()->id)
+            ->where('current_stock', '>', 0)
+            ->select('carts.*', 'products.current_stock')
+            ->sum('total');
+
+        $quantity = Cart::join('products', 'products.id', 'carts.product_id')
+            ->where('user_id', Auth::user()->id)
+            ->where('current_stock', '>', 0)
+            ->select('carts.*', 'products.current_stock')
+            ->count('carts.id');
+
+
+        foreach ($carts as $item) {
+
+            $product = Product::where('id', $item->product_id)->pluck('product_image')->first();
+            $products = Product::find($item->product_id);
+            $cartDetails['cart_id'] = $item->id;
+            $cartDetails['user_id'] = $item->user_id;
+            $cartDetails['product_id'] = $item->product_id;
+            $cartDetails['name'] = $item->name;
+            $cartDetails['qty'] = $item->qty;
+            $cartDetails['product_price'] = $products->product_price;
+            $cartDetails['product_discount'] = $products->product_discount;
+            $cartDetails['available_quantity'] = $products->current_stock;
+            $cartDetails['image'] = url($product);
+
+
+            $responseData['quantities'] = [];
+            $quantityDetails['qunatity'] = $quantity;
+            array_push($responseData['quantities'], $quantityDetails);
+
+            $responseData['total'] = [];
+            $totalDetails['total'] = $cart_total;
+            array_push($responseData['total'], $totalDetails);
+
+            array_push($responseData['cart'], $cartDetails);
+        }
+
+        return response()->json(['data' => $responseData], 200);
+    }
+
+    public function CartIncrement($id)
+    {
+        $row = Cart::find($id);
+        $qtys = $row->qty + 1;
+        $cart_total = $row->price * $qtys;
+        Cart::findOrFail($id)->update([
+            'qty' => $qtys,
+            'total' => $cart_total
+        ]);
+
+        $message = "Quantity Increased Successfully";
+        return response()->json(['status' => true, 'message' => $message], 200);
+    }
+
+    public function CartDecrement($id)
+    {
+        $row = Cart::find($id);
+        $qtys = $row->qty - 1;
+        $cart_total = $row->price * $qtys;
+        Cart::findOrFail($id)->update([
+            'qty' => $qtys,
+            'total' => $cart_total
+        ]);
+        $message = "Quantity Decreased Successfully";
+        return response()->json(['status' => true, 'message' => $message], 200);
+    }
+
+    public function cartDelete($id)
+    {
+        $cartDelete = Cart::find($id);
+        $cartDelete->delete();
+        $message = "Cart Removed Successfully";
+        return response()->json(['status' => true, 'message' => $message], 200);
+    }
+}

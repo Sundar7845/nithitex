@@ -1,0 +1,92 @@
+
+<?php $__env->startSection('content'); ?>
+
+<div class="breadcrumb-area bg-gray">
+    <div class="container">
+        <div class="breadcrumb-content text-center">
+            <ul>
+                <li>
+                    <a href="/">Home</a>
+                </li>
+                <li class="active">My Order </li>
+            </ul>
+        </div>
+    </div>
+</div>
+<!-- my account wrapper start -->
+<div class="my-account-wrapper pt-120 pb-120">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <!-- My Account Page Start -->
+                <div class="myaccount-page-wrapper">
+                    <!-- My Account Tab Menu Start -->
+                    <div class="row">
+                        <?php echo $__env->make('frontend.common.user_sidebar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+                        <!-- My Account Tab Menu End -->
+                        <!-- My Account Tab Content Start -->
+                        <div class="col-md-8">
+                            <table class="table table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Order</th>
+                                        <th>Date</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $serialNo = 1;
+                                    ?>
+                                    <?php $__currentLoopData = $orders; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $order): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <tr>
+                                        <td><?php echo e($serialNo); ?></td>
+                                        <td><?php echo e($order->order_date); ?></td>
+                                        <td>₹ <?php echo e($order->amount); ?></td>
+                                        <td>
+                                            <?php if($order->status == '0'): ?>        
+                                            <span class="badge badge-pill badge-warning" style="background: #800080;"> Pending </span>
+                                            <?php elseif($order->status == '1'): ?>
+                                            <span class="badge badge-pill badge-warning" style="background: #0000FF;"> Confirm </span>
+                                            <?php elseif($order->status == '2'): ?>
+                                            <span class="badge badge-pill badge-warning" style="background: #FFA500;"> Processing </span>
+                                
+                                            <?php elseif($order->status == '3'): ?>
+                                            <span class="badge badge-pill badge-warning" style="background: #808000;"> Picked </span>
+                                
+                                            <?php elseif($order->status == '4'): ?>
+                                            <span class="badge badge-pill badge-warning" style="background: #808080;"> Shipped </span>
+                                
+                                            <?php elseif($order->status == '5'): ?>
+                                            <span class="badge badge-pill badge-warning" style="background: #008000;"> Delivered </span>
+                                            <?php if($order->return_order == 1): ?> 
+                                            <span class="badge badge-pill badge-warning" style="background:red;">Return Requested </span>
+                                            <?php endif; ?>
+                                    
+                                            <?php else: ?>
+                                                <span class="badge badge-pill badge-warning" style="background: #FF0000;"> Cancel </span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <a class="btn btn-sm btn-primary" href="<?php echo e(url('user/order_details/'.$order->id )); ?>" class="check-btn sqr-btn "><i class="fa-sharp fa-solid fa-eye"></i> View</a>
+                                            <a target="_blank" href="<?php echo e(url('user/invoice_download/'.$order->id )); ?>" class="btn btn-sm btn-danger"><i class="fa-solid fa-circle-down"></i> Invoice</a>
+                                        </td>
+                                    </tr>
+                                    <?php
+                                        $serialNo++;
+                                    ?>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </tbody>
+                            </table>
+                        </div> <!-- My Account Tab Content End -->
+                    </div>
+                </div> <!-- My Account Page End -->
+            </div>
+        </div>
+    </div>
+</div>
+<!-- my account wrapper end -->
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('frontend.main_master', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\xampp\htdocs\Laravel-Nithitex\nithitex\resources\views/frontend/user/order/order_view.blade.php ENDPATH**/ ?>

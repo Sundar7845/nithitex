@@ -1,0 +1,218 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Cart;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\State;
+use App\Models\User;
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+
+class OrderController extends Controller
+{
+    // public function ProductBuyNow($id)
+    // {
+    //     if (Auth::check()) {
+    //         if(Auth::user()->state_name){
+    //             $state_name = User::where('state_name',Auth::user()->state_name)->pluck('state_name')->first();
+    //             $shipping_charge = State::where('state_name',$state_name)->pluck('shipping_charge')->first();
+    //             $cod_charge = State::where('state_name',$state_name)->pluck('cod_charge')->first();
+    //             }else{
+    //                 $shipping_charge = 0;
+    //                 $cod_charge = 0;
+    //             }
+    //             $product = Product::with('category')->findOrFail($id);
+    //             $cart_true=0;
+    //             $quantity=1;
+    //             if ($product->product_discount == 0.00) {
+    //                 $buynow_price=$product->product_price;
+    //             }else{
+    //                 $buynow_price=$product->product_discount;
+    //             }
+    //             $product_id=$product->id;
+    //             $state = State::where('state_name',Auth::user()->state_name)->first();
+
+    //             return response()->json([
+    //                 'status' => true, 
+    //                 'name' => Auth::user()->name,
+    //                 'email' => Auth::user()->email,
+    //                 'phone' => Auth::user()->phone,
+    //                 'door_no' => Auth::user()->door_no,
+    //                 'street_address' => Auth::user()->street_address,
+    //                 'city_name' => Auth::user()->city_name,
+    //                 'state_name' => Auth::user()->state_name,
+    //                 'state_id' => $state->id,
+    //                 'short_name' => $state->iso2,
+    //                 'pin_code' => Auth::user()->pin_code,
+    //                 'product_name' => $product->product_name,
+    //                 'cart_true' => $cart_true,
+    //                 'quantity' => $quantity,
+    //                 'buynow_price' => $buynow_price,
+    //                 'product_id' => $product_id,
+    //                 'shipping_charge' => $shipping_charge,
+    //                 'cod_charge' => $cod_charge
+    //             ],
+    //             200);
+
+    //         }else{
+    //             $message = "You Need to Login First";
+    //             return response()->json(['status' => true, 'message' => $message], 200);
+    //     }
+    // }
+
+    // public function ProductDetailsBuyNow(Request $request, $id)
+    // {
+    //     if (Auth::check()) {
+    //         if(Auth::user()->state_name){
+    //         $state_name = User::where('state_name',Auth::user()->state_name)->pluck('state_name')->first();
+    //         $shipping_charge = State::where('state_name',$state_name)->pluck('shipping_charge')->first();
+    //         $cod_charge = State::where('state_name',$state_name)->pluck('cod_charge')->first();
+    //         }else{
+    //         $shipping_charge = 0;
+    //         $cod_charge = 0;
+    //         }
+    //         $product = Product::with('category')->findOrFail($id);
+    //         $cart_true=0;
+    //         $quantity=$request->qty;
+    //         $buynow_price=$quantity * $product->product_discount;
+    //         $product_id=$product->id;
+    //         $state = State::where('state_name',Auth::user()->state_name)->first();
+
+    //         return response()->json([
+    //             'status' => true, 
+    //                 'name' => Auth::user()->name,
+    //                 'email' => Auth::user()->email,
+    //                 'phone' => Auth::user()->phone,
+    //                 'door_no' => Auth::user()->door_no,
+    //                 'street_address' => Auth::user()->street_address,
+    //                 'city_name' => Auth::user()->city_name,
+    //                 'state_name' => Auth::user()->state_name,
+    //                 'state_id' => $state->id,
+    //                 'short_name' => $state->iso2,
+    //                 'pin_code' => Auth::user()->pin_code,
+    //                 'product_name' => $product->product_name,
+    //                 'cart_true' => $cart_true,
+    //                 'quantity' => $quantity,
+    //                 'buynow_price' => $buynow_price,
+    //                 'product_id' => $product_id,
+    //                 'shipping_charge' => $shipping_charge,
+    //                 'cod_charge' => $cod_charge
+    //         ],
+    //             200);
+    //     }else{
+    //         $message = "You Need to Login First";
+    //         return response()->json(['status' => true, 'message' => $message], 200);
+    //     }
+    // }
+
+    public function placeOrder(Request $request)
+    {
+        // try {
+        $cart_true = $request->cart_true;
+        $shippingCharge = $request->shipping_charge;
+
+        $buy_product_qty = $request->buy_now_product_qty;
+        $buy_product_id = $request->buy_now_product_id;
+
+        $buy_price = $request->buy_now_price;
+        $buy_total = $request->buy_now_total;
+
+        $cart_subtotal = $request->cart_subtotal;
+        $cart_total = $request->cart_total;
+
+        if ($cart_true == 1) {
+            $total_amount = $cart_total;
+            $sub_total = $cart_subtotal;
+            $totQty = Cart::where('user_id', Auth::user()->id)->sum('qty');
+        } else {
+            $total_amount = $buy_total;
+            $sub_total = $buy_price;
+            $totQty = $buy_product_qty;
+        }
+
+        $order_id = Order::insertGetId([
+            'user_id' => Auth::user()->id,
+            'userrole_id' => Auth::user()->userrole_id,
+            'door_no' => $request->door_no,
+            'street_address' => $request->street_address,
+            'city_name' => $request->city_name,
+            'state_name' => $request->state_name,
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'alternative_number' => $request->alternative_number,
+            'pin_code' => $request->pin_code,
+            'payment_type' => 'Cash On Delivery',
+            'payment_status' => 'Unpaid',
+            'currency' =>  'INR',
+            'amount' => $total_amount,
+            'sub_total' => $sub_total,
+            'shipping_charge' => $shippingCharge,
+            'order_number' => 'NTXOR' . mt_rand(10000000, 99999999),
+            'order_date' => Carbon::now()->format('d F Y'),
+            'order_month' => Carbon::now()->format('F'),
+            'order_year' => Carbon::now()->format('Y'),
+            'status' => 'pending',
+            'created_at' => Carbon::now(),
+            'tot_Qty' => $totQty,
+            'collectcash_amount' => $request->collectcash_amount,
+            'margin_amount' => $request->margin_amount
+        ]);
+
+        if ($request->cart_true == 1) {
+            $carts = Cart::where('user_id', Auth::user()->id)->get();
+            foreach ($carts as $cart) {
+                OrderItem::insert([
+                    'order_id' => $order_id,
+                    'product_id' => $cart->product_id,
+                    'qty' => $cart->qty,
+                    'price' => $cart->total,
+                    'created_at' => Carbon::now(),
+                ]);
+
+                $product = Product::where('id', $cart->product_id)->first();
+                $product->current_stock = $product->current_stock - $cart->qty;
+                $product->update();
+            }
+        } else {
+
+            OrderItem::insert([
+                'order_id' => $order_id,
+                'product_id' => $buy_product_id,
+                'qty' => $buy_product_qty,
+                'price' => $buy_price,
+                'created_at' => Carbon::now(),
+            ]);
+
+            $product = Product::where('id', $buy_product_id)->first();
+            $product->current_stock = $product->current_stock - $buy_product_qty;
+            $product->update();
+        }
+
+        if(Auth::user()->userrole_id == 2){
+            $mobile = Auth::user()->phone;
+        }else{
+            $mobile = $request->phone;
+        }
+        
+
+        Http::post('http://pay4sms.in/sendsms/?token=9a2edf41bc2760c4c5bb0b592eaf7bfb&credit=2&sender=NITHTX&message=Your order is pending and will be Confirmed shortly. Check your status here: https://nithitex.com/track-your-order , Nithitex&number=' . $mobile . '');
+
+        if ($request->cart_true == 1) {
+            $rowId = Cart::where('user_id', Auth::user()->id)->get();
+            Cart::destroy($rowId);
+        }
+        $message = "Order Placed Successfully";
+        return response()->json(['status' => true, 'message' => $message], 200);
+        // } catch (Exception $e) {
+        //     return $this->error($e->getMessage(), $e->getCode());
+        // }
+    }
+}

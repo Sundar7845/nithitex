@@ -1,0 +1,438 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\API\ProductController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\AssignRoleToUserController;
+use App\Http\Controllers\Backend\AdminProfileController;
+use App\Http\Controllers\Frontend\CartController;
+use App\Http\Controllers\Frontend\IndexController;
+use App\Http\Controllers\Frontend\User\AllUserController;
+use App\Http\Controllers\Frontend\User\CartPageController;
+use App\Http\Controllers\Frontend\User\CashController;
+use App\Http\Controllers\Frontend\User\WishlistController;
+use App\Http\Controllers\User\CheckoutController;
+use App\Http\Controllers\Backend\ReturnController;
+use App\Http\Controllers\Frontend\BuyNowController;
+use App\Http\Controllers\Frontend\User\RazorpayController;
+use App\Http\Controllers\SELLER\ForgotPasswordController;
+use App\Http\Controllers\StaffController;
+use App\Http\Controllers\UserForgotPasswordController;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| contains the "web" middleware group. Now create something great!
+|
+*/
+
+Route::get('otp/verification/{user_id}', [App\Http\Controllers\Frontend\LoginController::class, 'verification'])->name('otp.verification');
+Route::post('otp/login', [App\Http\Controllers\Frontend\LoginController::class, 'loginWithOtp'])->name('otp.getlogin');
+Route::group(['middleware' => ['auth']], function () {
+
+    Route::middleware(['auth:sanctum', 'verified'])->get('/dashboard', function () {
+        return view('dashboard');
+    })->name('user.dashboard');
+
+    Route::get('user/logout', [\App\Http\Controllers\Frontend\LoginController::class, 'logout'])->name('user.logout');
+});
+
+//user-login
+Route::get('/login', [\App\Http\Controllers\Frontend\LoginController::class, 'loginForm'])->name('user.login');
+Route::post('/store', [\App\Http\Controllers\Frontend\LoginController::class, 'login'])->name('user.storing');
+Route::post('/register/store', [\App\Http\Controllers\Frontend\LoginController::class, 'regiterStore'])->name('user.register.store');
+
+
+Route::get('/', [IndexController::class, 'index'])->name('home');
+Route::get('/about', [IndexController::class, 'about'])->name('about');
+Route::get('/contact', [IndexController::class, 'contact'])->name('contact');
+Route::get('/terms', [IndexController::class, 'terms'])->name('terms');
+Route::get('/privacy', [IndexController::class, 'privacy'])->name('privacy');
+Route::get('/return', [IndexController::class, 'return'])->name('return');
+Route::get('/support', [IndexController::class, 'support'])->name('support');
+Route::get('/track-your-order', [IndexController::class, 'track_order'])->name('track_order');
+
+Route::get('/user/profile', [IndexController::class, 'UserProfile'])->name('user.profile');
+Route::post('/user/profile/store', [IndexController::class, 'UserProfileStore'])->name('user.profile.store');
+Route::get('/user/change/password', [IndexController::class, 'UserChangePassword'])->name('change.password');
+Route::post('/user/password/update', [IndexController::class, 'UserPasswordUpdate'])->name('user.password.update');
+
+//seler forget-password
+Route::get('seller-forget-password', [ForgotPasswordController::class, 'showForgetPasswordForm'])->name('forget.password.get');
+Route::post('seller-forget-password', [ForgotPasswordController::class, 'submitForgetPasswordForm'])->name('forget.password.post');
+Route::get('seller-reset-password/{token}', [ForgotPasswordController::class, 'showResetPasswordForm'])->name('reset.password.get');
+Route::post('seller-reset-password', [ForgotPasswordController::class, 'submitResetPasswordForm'])->name('reset.password.post');
+
+//user forget-password
+Route::get('user-forget-password', [UserForgotPasswordController::class, 'showForgetPasswordForm'])->name('user.forget.password.get');
+Route::post('user-forget-password', [UserForgotPasswordController::class, 'submitForgetPasswordForm'])->name('user.forget.password.post');
+Route::get('user-reset-password/{token}', [UserForgotPasswordController::class, 'showResetPasswordForm'])->name('user.reset.password.get');
+Route::post('user-reset-password', [UserForgotPasswordController::class, 'submitResetPasswordForm'])->name('user.reset.password.post');
+
+//Shop Page
+Route::get('/product/shop', [IndexController::class, 'ProductShop'])->name('product.shop');
+
+//Offers Page
+Route::get('/product/offers', [IndexController::class, 'ProductOffers'])->name('product.offers');
+
+//Tag Products Page
+Route::get('/product/tag/{tags}', [IndexController::class, 'ProductsbyTags'])->name('product.tag');
+
+//Frontend Product Details Load
+Route::get('/product/details/{id}/{slug}', [IndexController::class, 'ProductDetails']);
+
+//Category Products Load
+Route::get('category/product/{id}', [IndexController::class, 'CategoryDetails']);
+
+Route::get('/product/view/modal/{id}', [IndexController::class, 'ProductViewAjax']);
+Route::post('/cart/data/store/{id}', [CartController::class, 'AddToCart']);
+Route::post('/simplecart/store/{id}', [CartController::class, 'simpleAddToCart']);
+Route::get('/product/mini/cart/', [CartController::class, 'AddMiniCart']);
+Route::get('/minicart/product-remove/{rowId}', [CartController::class, 'RemoveMiniCart']);
+Route::post('/add-to-wishlist/{product_id}', [CartController::class, 'AddToWishlist']);
+// Buy Now Button
+Route::post('/productdetails/buynow/{id}', [BuyNowController::class, 'ProductDetailsBuyNow']);
+Route::get('/product/buynow/{id}', [BuyNowController::class, 'ProductBuyNow']);
+
+
+Route::group(['prefix' => 'user', 'middleware' => ['user', 'auth'], 'namespace' => 'User'], function () {
+    Route::get('/wishlist', [WishlistController::class, 'ViewWishlist'])->name('wishlist');
+    Route::post('/cash/order', [CashController::class, 'CashOrder'])->name('cash.order');
+    Route::post('/razorpay/order', [RazorpayController::class, 'RazorpayOrder'])->name('razorpay.order');
+    Route::post('/razorpay/complete', [RazorpayController::class, 'RazorpayComplete'])->name('razorpay.complete');
+    Route::get('/my/orders', [AllUserController::class, 'MyOrders'])->name('my.orders');
+    Route::get('/order_details/{order_id}', [AllUserController::class, 'OrderDetails']);
+    Route::get('/invoice_download/{order_id}', [AllUserController::class, 'InvoiceDownload']);
+    Route::post('/order/tracking', [AllUserController::class, 'OrderTraking'])->name('order.tracking');
+    Route::post('/return/order/{order_id}', [AllUserController::class, 'ReturnOrder'])->name('return.order');
+    Route::get('/return/order/list', [AllUserController::class, 'ReturnOrderList'])->name('return.order.list');
+    Route::get('/cancel/orders', [AllUserController::class, 'CancelOrders'])->name('cancel.orders');
+    Route::post('/cancel/request/{order_id}', [AllUserController::class, 'allCancelRequest'])->name('alll.cancel.request');
+    Route::get('/mycart', [CartPageController::class, 'MyCart'])->name('mycart');
+});
+Route::get('/wishlist-remove/{id}', [WishlistController::class, 'RemoveWishlistProduct']);
+Route::get('/get-wishlist-product', [WishlistController::class, 'GetWishlistProduct']);
+
+Route::get('/checkout', [CartController::class, 'CheckoutCreate'])->name('checkout');
+Route::post('/checkout/store', [CheckoutController::class, 'CheckoutStore'])->name('checkout.store');
+Route::get('/get-cart-product', [CartPageController::class, 'GetCartProduct']);
+Route::get('/cart-remove/{rowId}', [CartPageController::class, 'RemoveCartProduct']);
+Route::get('/cart-increment/{id}', [CartPageController::class, 'CartIncrement']);
+Route::get('/cart-decrement/{id}', [CartPageController::class, 'CartDecrement']);
+
+
+//payment-status
+Route::get('/paymentstatus', [CheckoutController::class, 'paymentstatus'])->name('paymentstatus');
+
+/*****************************Admin Route Starts***********************/
+Route::get('admin/login', [\App\Http\Controllers\Backend\AdminLoginController::class, 'loginForm'])->name('admin.form');
+Route::post('admin/store', [\App\Http\Controllers\Backend\AdminLoginController::class, 'login'])->name('admin.login');
+
+Route::group(['prefix' => 'admin', 'middleware' => ['auth:admin']], function () {
+    //admin-logout
+    Route::get('/logout', [\App\Http\Controllers\Backend\AdminLoginController::class, 'logout'])->name('admins.logout');
+});
+
+//Admin Dashboard
+Route::middleware(['auth:admin'])->group(function () {
+    Route::middleware(['auth:sanctum,admin', 'verified'])->get('/admin/dashboard', function () {
+        return view('admin.index');
+    })->name('admin.dashboard');
+
+    // Admin All Routes 
+    Route::get('/admin/profile', [AdminProfileController::class, 'AdminProfile'])->name('admin.profile');
+    Route::get('/admin/profile/edit', [AdminProfileController::class, 'AdminProfileEdit'])->name('admin.profile.edit');
+    Route::post('/admin/profile/store', [AdminProfileController::class, 'AdminProfileStore'])->name('admin.profile.store');
+    Route::get('/admin/change/password', [AdminProfileController::class, 'AdminChangePassword'])->name('admin.change.password');
+    Route::post('/update/change/password', [AdminProfileController::class, 'AdminUpdateChangePassword'])->name('update.change.password');
+
+    //Stock Maintanence
+    Route::get('/product/stock', [\App\Http\Controllers\Backend\ProductController::class, 'ProductStock'])->name('product.stock');
+    Route::post('/product/quantity/update', [\App\Http\Controllers\Backend\ProductController::class, 'stockupdate'])->name('product.quantity.update');
+    //Product Out Of Stock Report
+    Route::get('/report/out_of_stock', [\App\Http\Controllers\Backend\ProductController::class, 'ReportOutofStock'])->name('report.out_of_stock');
+    //Product  Stock  Report
+    Route::get('/report/stock', [\App\Http\Controllers\Backend\ProductController::class, 'Reportstock'])->name('report.stock');
+    Route::post('/product/stock-wise-report', [\App\Http\Controllers\Backend\ProductController::class, 'stockReport'])->name('product.stock-wise-report');
+
+    //Reseller-Request
+    Route::get('/reseller/view', [\App\Http\Controllers\Backend\SellerApproveController::class, 'ResellerView'])->name('resellers.all');
+    Route::get('/customer/view', [\App\Http\Controllers\Backend\SellerApproveController::class, 'customerView'])->name('customer.all');
+    Route::get('/reseller/request', [\App\Http\Controllers\Backend\SellerApproveController::class, 'ResellerRequest'])->name('resellers.request');
+    Route::get('/reseller/approve/{id}', [\App\Http\Controllers\Backend\SellerApproveController::class, 'ResellerApprove'])->name('resellers.approve');
+    Route::get('/reseller/deny/{id}', [App\Http\Controllers\Backend\SellerApproveController::class, 'ResellerDelete'])->name('reseller.deny');
+
+    //user-role-permission
+    Route::resource('user', StaffController::class);
+    Route::resource('role', RoleController::class);
+    Route::resource('assign_role_users', AssignRoleToUserController::class);
+
+
+    Route::prefix('master')->group(function () {
+        //Categorries
+        Route::get('category', [\App\Http\Controllers\Backend\CategoryController::class, 'CategoryView'])->name('category.all');
+        Route::post('category/store', [\App\Http\Controllers\Backend\CategoryController::class, 'CategoryStore'])->name('category.store');
+        Route::get('category/edit/{id}', [\App\Http\Controllers\Backend\CategoryController::class, 'CategoryEdit'])->name('category.edit');
+        Route::post('category/update', [\App\Http\Controllers\Backend\CategoryController::class, 'CategoryUpdate'])->name('category.update');
+        Route::get('category/delete/{id}', [\App\Http\Controllers\Backend\CategoryController::class, 'CategoryDelete'])->name('category.delete');
+
+        //Colors
+        Route::get('color', [\App\Http\Controllers\Backend\ColorController::class, 'ColorView'])->name('color.all');
+        Route::post('color/store', [\App\Http\Controllers\Backend\ColorController::class, 'ColorStore'])->name('color.store');
+        Route::get('color/edit/{id}', [\App\Http\Controllers\Backend\ColorController::class, 'ColorEdit'])->name('color.edit');
+        Route::post('color/update', [\App\Http\Controllers\Backend\ColorController::class, 'ColorUpdate'])->name('color.update');
+        Route::get('color/delete/{id}', [\App\Http\Controllers\Backend\ColorController::class, 'ColorDelete'])->name('color.delete');
+    });
+
+    Route::prefix('product')->group(function () {
+        //Colors
+        Route::get('view', [\App\Http\Controllers\Backend\ProductController::class, 'ProductView'])->name('product.all');
+        Route::post('store', [\App\Http\Controllers\Backend\ProductController::class, 'ProductStore'])->name('product.store');
+        Route::get('list', [\App\Http\Controllers\Backend\ProductController::class, 'ProductList'])->name('product.list');
+        Route::get('edit/{id}', [\App\Http\Controllers\Backend\ProductController::class, 'ProductEdit'])->name('product.edit');
+        Route::get('multiimg/delete/{id}', [\App\Http\Controllers\Backend\ProductController::class, 'ProductMultiImageDelete'])->name('product.multiimg.delete');
+
+        Route::post('update', [\App\Http\Controllers\Backend\ProductController::class, 'ProductUpdate'])->name('product.update');
+
+        Route::get('delete/{id}', [\App\Http\Controllers\Backend\ProductController::class, 'ProductDelete'])->name('product.delete');
+
+        Route::get('/color/variant/ajax/{color_id}', [\App\Http\Controllers\Backend\ProductController::class, 'getColorValue']);
+    });
+
+    Route::prefix('settings')->group(function () {
+
+        //about_us
+        Route::get('about-view', [\App\Http\Controllers\Backend\SettingsController::class, 'aboutView'])->name('about.all');
+        Route::post('about/store', [\App\Http\Controllers\Backend\SettingsController::class, 'store'])->name('about.store');
+
+        //Terms & Condition
+        Route::get('policy-view', [\App\Http\Controllers\Backend\PolicyController::class, 'index'])->name('policy.all');
+        Route::post('policy/store', [\App\Http\Controllers\Backend\PolicyController::class, 'store'])->name('policy.store');
+
+        //slider
+        Route::get('slider-view', [\App\Http\Controllers\Backend\SliderController::class, 'index'])->name('slider.all');
+        Route::post('slider/store', [\App\Http\Controllers\Backend\SliderController::class, 'store'])->name('slider.store');
+        Route::get('slider/edit/{id}', [\App\Http\Controllers\Backend\SliderController::class, 'edit'])->name('slider.edit');
+        Route::post('slider/update', [\App\Http\Controllers\Backend\SliderController::class, 'update'])->name('slider.update');
+        Route::get('slider/delete/{id}', [\App\Http\Controllers\Backend\SliderController::class, 'delete'])->name('slider.delete');
+
+        //shop Inforamtion 
+        Route::get('information-view', [\App\Http\Controllers\Backend\ShopInformationController::class, 'index'])->name('information.all');
+        Route::post('information/update', [\App\Http\Controllers\Backend\ShopInformationController::class, 'update'])->name('information.update');
+        //State
+        Route::get('state', [\App\Http\Controllers\Backend\ShopInformationController::class, 'stateView'])->name('state.all');
+        Route::post('state/store', [\App\Http\Controllers\Backend\ShopInformationController::class, 'stateStore'])->name('state.store');
+        Route::get('state/edit/{id}', [\App\Http\Controllers\Backend\ShopInformationController::class, 'stateEdit'])->name('state.edit');
+        Route::post('state/update', [\App\Http\Controllers\Backend\ShopInformationController::class, 'stateUpdate'])->name('state.update');
+    });
+    //user-order-list
+    Route::prefix('order')->group(function () {
+        Route::get('all', [\App\Http\Controllers\Backend\OrderController::class, 'orderView'])->name('order.all');
+        Route::get('details/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'OrdersDetails'])->name('order.details');
+        Route::get('/unpaid_status/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'PaymentunApprove'])->name('order.unpaid_status.update');
+        Route::get('/paid_status/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'PaymentpaidApprove'])->name('order.paid_status.update');
+        Route::post('update',  [\App\Http\Controllers\Backend\OrderController::class, 'CustomerOrderStatusUpdate'])->name('order.update');
+
+
+        Route::get('/pending', [\App\Http\Controllers\Backend\OrderController::class, 'PendingOrders'])->name('orders-pending');
+        Route::get('/confirmed', [\App\Http\Controllers\Backend\OrderController::class, 'ConfirmedOrders'])->name('orders-confirmed');
+        Route::get('/processing', [\App\Http\Controllers\Backend\OrderController::class, 'ProcessingOrders'])->name('orders-processing');
+        Route::get('/picked', [\App\Http\Controllers\Backend\OrderController::class, 'PickedOrders'])->name('orders-picked');
+        Route::get('/shipped', [\App\Http\Controllers\Backend\OrderController::class, 'ShippedOrders'])->name('orders-shipped');
+        Route::get('/delivered', [\App\Http\Controllers\Backend\OrderController::class, 'DeliveredOrders'])->name('orders-delivered');
+        Route::get('/cancel', [\App\Http\Controllers\Backend\OrderController::class, 'CancelOrders'])->name('orders-cancel');
+    });
+
+    Route::get('/pending/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'pendingApprove'])->name('pending.order.approve');
+    Route::get('/confirmed/order/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'confirmedApprove'])->name('confirmed.order.approve');
+    Route::post('/processing/order/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'processingApprove'])->name('processing.order.approve');
+    Route::post('/picked/order/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'pickedApprove'])->name('picked.order.approve');
+    Route::get('/shipped/order/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'shippedApprove'])->name('shipped.order.approve');
+
+    // seller-order-list
+    Route::prefix('seller/order')->group(function () {
+        Route::get('all', [\App\Http\Controllers\Backend\OrderController::class, 'sellerOrderView'])->name('seller.order.all');
+        Route::get('/unpaid_status/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'sellerPaymentunApprove'])->name('seller.order.unpaid_status.update');
+        Route::get('/paid_status/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'sellerPaymentpaidApprove'])->name('seller.order.paid_status.update');
+        Route::get('details/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'sellerOrdersDetails'])->name('seller.order.details');
+        Route::post('update',  [\App\Http\Controllers\Backend\OrderController::class, 'sellerOrderStatusUpdate'])->name('seller.order.update');
+        Route::get('/pending', [\App\Http\Controllers\Backend\OrderController::class, 'sellerPendingOrders'])->name('seller.orders-pending');
+        Route::get('/pending/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'sellerPendingApprove'])->name('seller.pending.order.approve');
+        Route::get('/confirmed', [\App\Http\Controllers\Backend\OrderController::class, 'sellerConfirmedOrders'])->name('seller.orders-confirmed');
+        Route::get('/confirmed/order/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'sellerConfirmedApprove'])->name('seller.confirmed.order.approve');
+        Route::get('/processing', [\App\Http\Controllers\Backend\OrderController::class, 'sellerProcessingOrders'])->name('seller.orders-processing');
+        Route::post('/processing/order/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'sellerProcessingApprove'])->name('seller.processing.order.approve');
+        Route::get('/picked', [\App\Http\Controllers\Backend\OrderController::class, 'sellerPickedOrders'])->name('seller.orders-picked');
+        Route::post('/picked/order/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'sellerPickedApprove'])->name('seller.picked.order.approve');
+        Route::get('/shipped', [\App\Http\Controllers\Backend\OrderController::class, 'sellerShippedOrders'])->name('seller.orders-shipped');
+        Route::get('/shipped/order/update/{order_id}', [\App\Http\Controllers\Backend\OrderController::class, 'sellerShippedApprove'])->name('seller.shipped.order.approve');
+        Route::get('/delivered', [\App\Http\Controllers\Backend\OrderController::class, 'sellerDeliveredOrders'])->name('seller.orders-delivered');
+        Route::get('/cancel', [\App\Http\Controllers\Backend\OrderController::class, 'sellerCancelOrders'])->name('seller.orders-cancel');
+    });
+
+    //Order print
+    Route::get('/order/print/modal/{id}', [\App\Http\Controllers\Backend\OrderController::class, 'OrderprintAjax'])->name('order.print.modal');
+    Route::get('/prnpriview/{id}', [\App\Http\Controllers\Backend\OrderController::class, 'prnpriview'])->name('prnpriview');
+
+    // Admin Return Order Routes 
+    Route::prefix('admin')->group(function () {
+        Route::get('/returnrequest', [ReturnController::class, 'ReturnRequest'])->name('return.request');
+        Route::get('/return/approve/{order_id}', [ReturnController::class, 'ReturnRequestApprove'])->name('return.approve');
+        Route::get('/all/returnrequest', [ReturnController::class, 'ReturnAllRequest'])->name('all.request');
+    });
+
+    // Admin Return Order Routes 
+    Route::prefix('admin')->group(function () {
+        Route::get('/sellerreturnrequest', [\App\Http\Controllers\Backend\ReturnController::class, 'sellerReturnRequest'])->name('seller.return.request');
+        Route::get('/sellerreturn/approve/{order_id}', [\App\Http\Controllers\Backend\ReturnController::class, 'sellerReturnRequestApprove'])->name('seller.return.approve');
+    });
+
+    //cancel-request
+    Route::prefix('admin')->group(function () {
+        Route::get('/cancelrequest', [ReturnController::class, 'cancelRequest'])->name('cancel.request');
+        Route::get('/cancel/approve/{order_id}', [ReturnController::class, 'cancelRequestApprove'])->name('cancel.approve');
+        Route::get('/all/cancelrequest', [ReturnController::class, 'cancelAllRequest'])->name('all.cancel.request');
+    });
+
+    //seller-cancel-request
+    Route::prefix('admin')->group(function () {
+        Route::get('/sellercancelrequest', [ReturnController::class, 'sellerCancelRequest'])->name('seller.cancel.request');
+        Route::get('/sellercancel/approve/{order_id}', [ReturnController::class, 'sellerCancelRequestApprove'])->name('seller.cancel.approve');
+    });
+});
+
+//Social Login
+Route::get('auth/google', [\App\Http\Controllers\Frontend\GoogleController::class, 'redirectToGoogle']);
+Route::get('auth/google/callback', [\App\Http\Controllers\Frontend\GoogleController::class, 'handleGoogleCallback']);
+Route::get('auth/facebook', [\App\Http\Controllers\Frontend\FacebookController::class, 'redirectToFacebook']);
+Route::get('auth/facebook/callback', [\App\Http\Controllers\Frontend\FacebookController::class, 'handleFacebookCallback']);
+
+
+//product-search
+Route::get('/product/search', [\App\Http\Controllers\Frontend\IndexController::class, 'ProductSearch'])->name('product.search');
+
+//product-sort
+Route::get('/product/sort', [\App\Http\Controllers\Frontend\IndexController::class, 'productSort'])->name('product.sort');
+
+//product-color
+Route::get('/product/color/sort', [\App\Http\Controllers\Frontend\IndexController::class, 'productColor'])->name('product.color.sort');
+
+//firebase
+Route::get('phone_auth', [\App\Http\Controllers\Frontend\FirebaseController::class, 'phone_auth']);
+
+// ======================  Admin Routes End  ================================ //
+
+// ======================  SELLER ROUTES START ================================ //
+
+
+Route::group(['middleware' => ['auth:sanctum']], function () {
+
+    Route::get('/seller/dashboard', function () {
+        return view('seller.dashboard.seller_dashboard');
+    })->name('seller.dashboard');
+
+    Route::group(['prefix' => 'seller'], function () {
+
+        //seller dashboard
+        Route::get('/profile', [\App\Http\Controllers\SELLER\IndexController::class, 'profile'])->name('seller.profile');
+        Route::post('/profile/store', [\App\Http\Controllers\SELLER\IndexController::class, 'profileStore'])->name('seller.profile.store');
+        Route::get('/change/password', [\App\Http\Controllers\SELLER\IndexController::class, 'password'])->name('seller.password');
+        Route::post('/update/password', [\App\Http\Controllers\SELLER\IndexController::class, 'updatePassword'])->name('seller.update.password');
+        Route::get('/orders', [\App\Http\Controllers\SELLER\IndexController::class, 'orders'])->name('seller.orders');
+        Route::get('return/orders', [\App\Http\Controllers\SELLER\IndexController::class, 'returnOrders'])->name('seller.return');
+        Route::get('cancel/orders', [\App\Http\Controllers\SELLER\IndexController::class, 'cancelOrder'])->name('seller.cancel');
+        Route::get('/logout', [\App\Http\Controllers\SELLER\SellerController::class, 'logout'])->name('seller.logout');
+        Route::get('/my/orders', [\App\Http\Controllers\SELLER\OrderController::class, 'MyOrders'])->name('seller.my.orders');
+        Route::get('/order_details/{order_id}', [\App\Http\Controllers\SELLER\OrderController::class, 'OrderDetails'])->name('seller.invoice');
+        Route::get('/invoice_download/{order_id}', [\App\Http\Controllers\SELLER\OrderController::class, 'InvoiceDownload'])->name('seller.invoice.download');
+        Route::post('/return/order/{order_id}', [\App\Http\Controllers\SELLER\OrderController::class, 'ReturnOrder'])->name('seller.return.order');
+        Route::get('/return/order/list', [\App\Http\Controllers\SELLER\OrderController::class, 'ReturnOrderList'])->name('seller.return.order.list');
+        Route::get('/cancel/orders/list', [\App\Http\Controllers\SELLER\OrderController::class, 'CancelOrders'])->name('seller.cancel.orders');
+        Route::post('/cancel/request/{order_id}', [\App\Http\Controllers\SELLER\OrderController::class, 'sellerCancelRequest'])->name('reseller.cancel.request');
+
+
+        //order-traking
+        Route::post('/order/tracking', [\App\Http\Controllers\SELLER\IndexController::class, 'OrderTraking'])->name('seller.order.tracking');
+
+        //wishlist
+        Route::get('/wishlist', [\App\Http\Controllers\SELLER\WishlistController::class, 'ViewWishlist'])->name('seller.wishlist');
+        Route::post('/add-to-wishlist/{product_id}', [\App\Http\Controllers\SELLER\WishlistController::class, 'AddToWishlist'])->name('seller.addwishlist');
+
+        //cart
+        Route::get('/mycart', [\App\Http\Controllers\SELLER\CartController::class, 'MyCart'])->name('seller.mycart');
+        Route::get('/checkout', [\App\Http\Controllers\SELLER\CartController::class, 'CheckoutCreate'])->name('seller.checkout');
+        Route::post('/checkout/store', [\App\Http\Controllers\SELLER\CheckoutController::class, 'CheckoutStore'])->name('seller.checkout.store');
+
+        Route::get('/product/mini/cart/', [\App\Http\Controllers\SELLER\CartController::class, 'AddMiniCart'])->name('seller.add.minicart');
+        Route::post('/cash/order', [\App\Http\Controllers\SELLER\CashController::class, 'CashOrder'])->name('seller.cash.order');
+
+        //razorpay 
+        Route::post('/razorpay/order', [\App\Http\Controllers\SELLER\RazorpayController::class, 'RazorpayOrder'])->name('seller.razorpay.order');
+        Route::post('/razorpay/complete', [\App\Http\Controllers\SELLER\RazorpayController::class, 'RazorpayComplete'])->name('seller.razorpay.complete');
+
+        // Buy Now Button
+        Route::post('/productdetails/buynow/{id}', [\App\Http\Controllers\SELLER\BuynowController::class, 'ProductDetailsBuyNow'])->name('seller.buynowpost');
+        Route::get('/product/buynow/{id}', [\App\Http\Controllers\SELLER\BuynowController::class, 'ProductBuyNow'])->name('seller.buynow');
+
+
+        /**********************Shop Routes Start***************/
+        //product detail
+        Route::get('/product/details/{id}/{slug}', [IndexController::class, 'ProductDetails']);
+
+        //product shop
+        Route::get('/product/shop', [IndexController::class, 'ProductShop'])->name('seller.product.shop');
+
+        //Category Products Load
+        Route::get('category/product/{id}', [IndexController::class, 'CategoryDetails'])->name('seller.category');
+
+        //Tag Products Page
+        Route::get('/product/tag/{tags}', [IndexController::class, 'ProductsbyTags'])->name('seller.product.tag');
+
+        //product-search
+        Route::get('/product/search', [IndexController::class, 'ProductSearch'])->name('seller.product.search');
+
+        //product-sort
+        Route::get('product/sort', [IndexController::class, 'productSort'])->name('seller.product.sort');
+
+        //Offers Page
+        Route::get('/product/offers', [IndexController::class, 'ProductOffers'])->name('seller.product.offers');
+
+        //product-color
+        Route::get('/product/color/sort', [IndexController::class, 'productColor'])->name('seller.product.color.sort');
+
+        /**********************Shop Routes End***************/
+
+
+        //seller about
+        Route::get('/about', [IndexController::class, 'about'])->name('seller.about');
+        //contact page
+        Route::get('/contact', [IndexController::class, 'contact'])->name('seller.contact');
+        //footer-section
+        Route::get('/terms', [IndexController::class, 'terms'])->name('seller.terms');
+        Route::get('/privacy', [IndexController::class, 'privacy'])->name('seller.privacy');
+        Route::get('/return', [IndexController::class, 'return'])->name('seller.return.policy');
+        Route::get('/support', [IndexController::class, 'support'])->name('seller.support');
+        Route::get('/track-your-order', [IndexController::class, 'track_order'])->name('seller.track_order');
+
+
+        //seller-home
+        Route::get('/home', [IndexController::class, 'index'])->name('seller.home');
+    });
+});
+
+Route::group(['prefix' => 'seller'], function () {
+
+    //Seller Login
+    Route::get('/login', [\App\Http\Controllers\SELLER\SellerController::class, 'loginFormshow'])->name('seller.login');
+    Route::post('/store', [\App\Http\Controllers\SELLER\SellerController::class, 'login'])->name('seller.store');
+    Route::get('/register', [\App\Http\Controllers\SELLER\SellerController::class, 'registerFormshow'])->name('seller.register');
+    Route::post('/register/store', [\App\Http\Controllers\SELLER\SellerController::class, 'regiterStore'])->name('seller.register.store');
+});
+
+// ======================  SELLER ROUTES END ================================ //

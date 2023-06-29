@@ -1,0 +1,253 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Cart;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\ProductMultipleImage;
+use Illuminate\Http\Request;
+use App\Traits\ResponseAPI;
+use App\Traits\Utils;
+use Exception;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
+class ProductController extends Controller
+{
+  use ResponseAPI;
+  use Utils;
+  private $recordsperpage = 10;
+
+  public function productsByCategory(Request $request, $id)
+  {
+    try {
+      $user_id = ($request->user_id > 0 ? array($request->user_id) : 0);
+      $product_id = ($request->product_id > 0 ? $request->product_id : 0);
+
+      $query = $this->getProducts($user_id)
+        ->where('category_id', $id)
+        ->inRandomOrder()
+        ->orderBy('id', 'DESC');
+
+      if ($product_id > 0) {
+        $query = $query->where('products.id', '!=', $product_id);
+      }
+
+      $products = $query->paginate($this->recordsperpage);
+
+      $responseData = $this->getProductLists($products, $user_id);
+
+      return response()->json(['data' => $responseData, 'count' => $products->count(), 'total' => $products->total(), 'currentPage' => $products->currentPage(), 'lastPage' => $products->lastPage()], 200);
+    } catch (Exception $e) {
+      return $this->error($e->getMessage(), $e->getCode());
+    }
+  }
+
+  public function paging(Request $request)
+  {
+    $user_id = ($request->user_id > 0 ? array($request->user_id) : 0);
+
+    $query = $this->getProducts($user_id)
+      ->inRandomOrder()
+      ->orderBy('id', 'DESC');
+
+    if ($request->product_type == 0) {
+      $products = $query->paginate($this->recordsperpage);
+    } else if ($request->product_type == 1) {
+      $products = $this->getOfferProducts($user_id)
+        ->inRandomOrder()
+        ->orderBy('id', 'DESC')
+        ->paginate($this->recordsperpage);
+    } else if ($request->product_type == 2) {
+      $products = $query->where('is_featured', '=', 1)->paginate($this->recordsperpage);
+    } else if ($request->product_type == 3) {
+      $products = $query->where('is_bestSelling', '=', 1)->paginate($this->recordsperpage);
+    } else if ($request->product_type == 4) {
+      $products = $query->where('is_newArrival', '=', 1)->paginate($this->recordsperpage);
+    }
+
+    $responseData = $this->getProductLists($products, $user_id);
+
+    return response()->json(['data' => $responseData, 'count' => $products->count(), 'total' => $products->total(), 'currentPage' => $products->currentPage(), 'lastPage' => $products->lastPage()], 200);
+  }
+
+  public function allProducts(Request $request)
+  {
+    try {
+
+      $user_id = ($request->user_id > 0 ? array($request->user_id) : 0);
+
+      $query = $this->getProducts($user_id)
+        ->inRandomOrder()
+        ->orderBy('id', 'DESC');
+
+      if ($request->product_type == 0) {
+        $products = $query->paginate($this->recordsperpage);
+      } else if ($request->product_type == 1) {
+        $products = $this->getOfferProducts($user_id)
+          ->inRandomOrder()
+          ->orderBy('id', 'DESC')
+          ->paginate($this->recordsperpage);
+      } else if ($request->product_type == 2) {
+        $products = $query->where('is_featured', '=', 1)->paginate($this->recordsperpage);
+      } else if ($request->product_type == 3) {
+        $products = $query->where('is_bestSelling', '=', 1)->paginate($this->recordsperpage);
+      } else if ($request->product_type == 4) {
+        $products = $query->where('is_newArrival', '=', 1)->paginate($this->recordsperpage);
+      }
+
+      $responseData = $this->getProductLists($products, $user_id);
+
+      return response()->json(['data' => $responseData, 'count' => $products->count(), 'total' => $products->total(), 'currentPage' => $products->currentPage(), 'lastPage' => $products->lastPage()], 200);
+    } catch (\Exception $e) {
+      return $this->error($e->getMessage(), $e->getCode());
+    }
+  }
+
+  public function productdetail(Request $request, $id)
+  {
+    try {
+      $responseData = [];
+
+      $responseData['product'] = [];
+      $user_id = ($request->user_id > 0 ? array($request->user_id) : 0);
+      if ($user_id) {
+        $query = Product::with('color')->select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+        $query->leftJoin('wishlists', function ($join) {
+          $join->on('wishlists.product_id', '=', 'products.id')
+            ->where("wishlists.user_id", '=', DB::raw('?'));
+        })->setBindings(array_merge($query->getBindings(), $user_id));
+        $product = $query->where('products.id', '=', $id)
+          ->first();
+      } else {
+        $product = Product::with('color')->where('products.id', '=', $id)->first();
+      }
+      $productDetails['id'] = $product->id;
+
+      $cart = Cart::where('product_id', $product->id)->where('user_id', $user_id)->first();
+
+      $category = Category::where('id', $product->category_id)->pluck('category_name')->first();
+
+      $amount = $product->product_price - $product->product_discount;
+      $discount = ($amount / $product->product_price) * 100;
+
+      $productDetails['category_id'] = $product->category_id;
+      $productDetails['category_name'] = $category;
+      $productDetails['product_name'] = $product->product_name;
+      $productDetails['product_price'] = $product->product_price;
+      if ($this->getRoleId($user_id) == 2) {
+        $productDetails['product_discount'] = $product->seller_discount;
+      } else {
+        $productDetails['product_discount'] = $product->product_discount;
+      }
+      $productDetails['customer_price'] = $product->product_discount;
+      $productDetails['short_description'] = $product->short_description;
+      $productDetails['long_description'] = $product->long_description;
+      $productDetails['current_stock'] = $product->current_stock;
+      $productDetails['product_sku'] = $product->product_sku;
+      $productDetails['discount_percentage'] = round($discount);
+      $productDetails['product_image'] = url($product->product_image);
+      $productDetails['product_video_url'] = $product->product_video_url;
+      $productDetails['product_url'] = url('/product/details/' . $product->id . '/' . $product->product_slug);
+      $productDetails['is_favourite'] = $product->is_favourite;
+      $productDetails['color_id'] = $product->color_id;
+      $productDetails['color_name'] = ($product->color_id ? $product->color->color_name : "");
+      $productDetails['color_code'] = ($product->color_id ? $product->color->color_code : "");
+
+      $multiImage = ProductMultipleImage::where('product_id', $product->id)->get();
+      $multiImagedetails = [];
+      $productDetails['product_multiple_image'] = [];
+
+      foreach ($multiImage as $item) {
+        $multiImagedetails['id'] = $item->id;
+        $multiImagedetails['product_id'] = $item->product_id;
+        $multiImagedetails['product_multiple_image'] = url($item->product_mult_image);
+        array_push($productDetails['product_multiple_image'], $multiImagedetails);
+      }
+
+      $productDetails['cart'] = ($cart != null ? true : false);
+      $productDetails['cart_qty'] = ($cart != null ? $cart->qty : "1");
+
+      array_push($responseData['product'], $productDetails);
+
+      return response()->json(['data' => $responseData], 200);
+    } catch (\Exception $e) {
+      return $this->error($e->getMessage(), $e->getCode());
+    }
+  }
+
+  public function colorSort(Request $request, $color_id)
+  {
+    try {
+
+      $user_id = ($request->user_id > 0 ? array($request->user_id) : 0);
+      $product_type = ($request->product_type != null ? $request->product_type : 0);
+
+      if ($request->product_type == 0) {
+        $products = $this->getProductsColorByProductType($user_id, $color_id, $product_type)->paginate($this->recordsperpage);
+      } else if ($request->product_type == 1) {
+        $products = $this->getProductsColorByProductType($user_id, $color_id, $product_type)->paginate($this->recordsperpage);
+      } else if ($request->product_type == 2) {
+        $products = $this->getProductsColorByProductType($user_id, $color_id, $product_type)->where('is_featured', '=', 1)->paginate($this->recordsperpage);
+      } else if ($request->product_type == 3) {
+        $products = $this->getProductsColorByProductType($user_id, $color_id, $product_type)->where('is_bestSelling', '=', 1)->paginate($this->recordsperpage);
+      } else if ($request->product_type == 4) {
+        $products = $this->getProductsColorByProductType($user_id, $color_id, $product_type)->where('is_newArrival', '=', 1)->paginate($this->recordsperpage);
+      }
+
+      $responseData = $this->getProductLists($products, $user_id);
+
+      return response()->json(['data' => $responseData, 'count' => $products->count(), 'total' => $products->total(), 'currentPage' => $products->currentPage(), 'lastPage' => $products->lastPage()], 200);
+    } catch (Exception $e) {
+      return $this->error($e->getMessage(), $e->getCode());
+    }
+  }
+
+  public function productSort(Request $request, $sort_by)
+  {
+    try {
+
+      $user_id = ($request->user_id > 0 ? array($request->user_id) : 0);
+      $product_type = ($request->product_type != null ? $request->product_type : 0);
+      if ($request->product_type == 0) {
+        $products = $this->getProductsSortByProductType($user_id, $sort_by, $product_type)->paginate($this->recordsperpage);
+      } else if ($request->product_type == 1) {
+        $products = $this->getProductsSortByProductType($user_id, $sort_by, $product_type)->paginate($this->recordsperpage);
+      } else if ($request->product_type == 2) {
+        $products = $this->getProductsSortByProductType($user_id, $sort_by, $product_type)->where('is_featured', '=', 1)->paginate($this->recordsperpage);
+      } else if ($request->product_type == 3) {
+        $products = $this->getProductsSortByProductType($user_id, $sort_by, $product_type)->where('is_bestSelling', '=', 1)->paginate($this->recordsperpage);
+      } else if ($request->product_type == 4) {
+        $products = $this->getProductsSortByProductType($user_id, $sort_by, $product_type)->where('is_newArrival', '=', 1)->paginate($this->recordsperpage);
+      }
+
+
+      $responseData = $this->getProductLists($products, $user_id);
+
+      return response()->json(['data' => $responseData, 'count' => $products->count(), 'total' => $products->total(), 'currentPage' => $products->currentPage(), 'lastPage' => $products->lastPage()], 200);
+    } catch (Exception $e) {
+      return $this->error($e->getMessage(), $e->getCode());
+    }
+  }
+
+  public function search(Request $request, $search_value)
+  {
+    try {
+
+      $user_id = ($request->user_id > 0 ? array($request->user_id) : 0);
+
+      $products = $this->getAllProducts($user_id)
+        ->where('products.product_name', 'like', '%' . $search_value . '%')
+        ->orWhere('product_sku', 'LIKE', '%' . $search_value . '%')
+        ->orderBy('id', 'DESC')->paginate($this->recordsperpage);
+
+      $responseData = $this->getProductLists($products, $user_id);
+
+      return response()->json(['data' => $responseData, 'count' => $products->count(), 'total' => $products->total(), 'currentPage' => $products->currentPage(), 'lastPage' => $products->lastPage()], 200);
+    } catch (Exception $e) {
+      return $this->error($e->getMessage(), $e->getCode());
+    }
+  }
+}

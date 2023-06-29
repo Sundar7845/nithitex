@@ -1,0 +1,152 @@
+<?php $__env->startSection('content'); ?>
+<?php $__env->startSection('title'); ?>
+India's No 1 Online Saree Shop - Nithitex
+<?php $__env->stopSection(); ?>
+
+        <div class="breadcrumb-area bg-gray">
+            <div class="container">
+                <div class="breadcrumb-content text-center">
+                    <ul>
+                        <li>
+                            <a href="/">Home</a>
+                        </li>
+                        <li class="active">login - register </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="login-register-area pt-80 pb-80">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-7 col-md-12 ms-auto me-auto">
+                        <div class="login-register-wrapper">
+                            <div class="login-register-tab-list nav">
+                                <a class="active" data-bs-toggle="tab" href="#lg1">
+                                    <h4> login </h4>
+                                </a>
+                                <a data-bs-toggle="tab" href="#lg2">
+                                    <h4> register </h4>
+                                </a>
+                            </div>
+                            <div class="tab-content">
+                                <div id="lg1" class="tab-pane active">
+                                    <div class="login-form-container">
+                                        <div class="login-register-form">
+                                            <form method="POST" action="<?php echo e(isset($guard) ? url($guard.'/login') : route('login')); ?>">
+                                                <?php echo csrf_field(); ?>
+                                                <input type="email" name="email" id="email" placeholder="Enter your email" required/>
+                                                <input type="text" name="phone" id="phone" placeholder="Enter your mobile number" required/>
+                                                <input type="password" name="password" id="password" placeholder="Password" required/>
+                                                <div class="button-box">
+                                                    <div class="login-toggle-btn">
+                                                        <input type="checkbox">
+                                                        <label>Remember me</label>
+                                                        <a href="<?php echo e(route('user.forget.password.get')); ?>">Forgot Password?</a>
+                                                    </div>
+                                                    <button type="submit" name="" id="">Login</button>
+                                                    
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="lg2" class="tab-pane">
+                                    <div class="login-form-container">
+                                        <div class="login-register-form">
+                                            <form method="POST" action="<?php echo e(route('register')); ?>">
+                                                <?php echo csrf_field(); ?>
+                                                    <input type="text" name="name" id="name" placeholder="Username" required>
+                                                    
+                                                    <input type="email" name="email" id="email" placeholder="E-mail" required>
+                                                    <input type="password" name="password" id="password" placeholder="Password" required>
+                                                    <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Confirm Password" required>
+                                                    <div class="alert alert-success" id="sentSuccess" style="display: none;"></div>
+                                                    <input type="text" id="number" name="phone" placeholder="+91 9876543210" required><br>
+                                                    <div id="recaptcha-container"></div><br>
+                                                    <button type="button" class="btn btn-flat btn-success" onclick="SendCode();">Send Code</button>
+                                                    <div class="alert alert-success" id="successRegsiter" style="display: none;"></div>
+                                                    <br><br>
+                                                    <input type="text" id="verificationCode" placeholder="Enter Verification Code" required><br>
+                                                    <button type="submit" class="btn btn-flat btn-success" onclick="VerifyCode();">Register Here!</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/6.0.2/firebase.js"></script>
+          
+        <script>
+              
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+          apiKey: "AIzaSyDR7tANxvh0yD4UKY4yjDM4rX8ARQABOTY",
+          authDomain: "phoneauth-cc4b3.firebaseapp.com",
+          projectId: "phoneauth-cc4b3",
+          storageBucket: "phoneauth-cc4b3.appspot.com",
+          messagingSenderId: "645077910902",
+          appId: "1:645077910902:web:fcd6c9d74e38759da12657",
+          measurementId: "G-CPZZJNBX1V"
+        };
+            
+          firebase.initializeApp(firebaseConfig);
+        </script>
+          
+        <script type="text/javascript">
+          
+            window.onload=function () {
+              render();
+            };
+          
+            function render() {
+                window.recaptchaVerifier=new firebase.auth.RecaptchaVerifier('recaptcha-container');
+                recaptchaVerifier.render();
+            }
+          
+            function SendCode() {
+                   
+                var number = $("#number").val();
+                  
+                firebase.auth().signInWithPhoneNumber(number,window.recaptchaVerifier).then(function (confirmationResult) {
+                      
+                    window.confirmationResult=confirmationResult;
+                    coderesult=confirmationResult;            
+          
+                    $("#sentSuccess").text("Message Sent Successfully.");
+                    $("#sentSuccess").show();
+                      
+                }).catch(function (error) {
+                    $("#error").text(error.message);
+                    $("#error").delay(1000).slideUp(300);
+                });
+          
+            }
+          
+            function VerifyCode() {
+          
+                var code = $("#verificationCode").val();
+          
+                coderesult.confirm(code).then(function (result) {
+                    var user=result.user;            
+          
+                    $("#successRegsiter").text("You Are Register Successfully.");
+                    $("#successRegsiter").show();
+          
+                }).catch(function (error) {
+                    $("#error").text(error.message);
+                    $("#error").delay(1000).slideUp(300);
+                });
+            }
+          
+        </script>
+
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('frontend.main_master', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\xampp\htdocs\Laravel-Nithitex\nithitex\resources\views/auth/login.blade.php ENDPATH**/ ?>

@@ -1,0 +1,164 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Mail\OrderMail;
+use App\Models\Cart;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\ShippingCharge;
+use Carbon\Carbon;
+use PDF;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Razorpay\Api\Api;
+use Illuminate\Support\Str;
+
+
+class RazorpayController extends Controller
+{
+    private $razorpayId = "rzp_test_bUcyzVDkdztvea";
+    private $razorpayKey = "s1BI0kDv3nEaTehLWoLPQQGJ";
+
+    public function razorpay(Request $request)
+    {
+        // Generate random receipt id
+        $receiptId = Str::random(20);
+        // Create an object of razorpay
+        $api = new Api($this->razorpayId, $this->razorpayKey);
+        // In razorpay you have to convert rupees into paise we multiply by 100
+        // Currency will be INR
+        // Creating order
+        $orders = $api->order->create(array(
+            'receipt' => $receiptId,
+            'amount' => $request->all()['amount'] * 100,
+            'currency' => 'INR'
+        ));
+        // Return response on payment page
+        $response = [
+            'orderId' => $orders['id'],
+            'razorpayId' => $this->razorpayId,
+            'amount' => $request->all()['amount'] * 100,
+        ];
+        // Let's checkout payment page is it working
+
+        if($request->cart_true == 1){
+            $totQty= Cart::where('user_id',Auth::user()->id)->sum('qty');
+        }
+        else {
+            $totQty = $request->buy_now_product_qty;
+        }
+
+        $cart_total = Cart::where('user_id', Auth::user()->id)->sum('total');
+        $shipping = ShippingCharge::where('shipping_payment_method', 'online')->first();
+        $shipping_charge = $shipping->shipping_amount;
+        $total_amount = $cart_total + $shipping_charge;
+
+        $order_id = Order::create([
+            
+            'user_id' => Auth::user()->id,
+            'userrole_id' => Auth::user()->userrole_id,
+            'door_no' => $request->door_no,
+            'street_address' => $request->street_address,
+            'city_name' => $request->city_name,
+            'state_name' => $request->state_name,
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'alternative_number' => $request->alternative_number,
+            'pin_code' => $request->pin_code,
+            'payment_type' => 'Razorpay',
+            'payment_status' => 'paid',
+            'r_order_id' => $request->r_order_id,
+            'r_payment_id'=> $request->r_payment_id,
+            'currency' =>  'INR',
+            'amount' => $request->amount/100,
+            'sub_total' => $request->sub_total,
+            'shipping_charge' => $request->shipping_charge,    
+            'invoice_no' => 'NITHTX'.mt_rand(10000000,99999999),
+            'order_number' => 'NTXOR'.mt_rand(10000000,99999999),
+            'order_date' => Carbon::now()->format('d F Y'),
+            'order_month' => Carbon::now()->format('F'),
+            'order_year' => Carbon::now()->format('Y'),
+            'status' => 'pending',
+            'created_at' => Carbon::now(),	 
+            'tot_Qty'=>$totQty
+        ]);
+
+        $carts = Cart::where('user_id', Auth::user()->id)->get();
+        foreach ($carts as $cart) {
+            OrderItem::insert([
+                'order_id' => $order_id->id,
+                'product_id' => $cart->product_id,
+                'qty' => $cart->qty,
+                'price' => $cart->price,
+                'created_at' => Carbon::now(),
+
+            ]);
+            $product = Product::where('id', $cart->product_id)->first();
+            $product->current_stock = $product->current_stock - $cart->qty;
+            $product->update();
+        }
+
+
+
+        // Start Send Email 
+        $invoice = Order::findOrFail($order_id->id);
+        $data = [
+            'invoice_no' => $invoice->invoice_no,
+            'amount' => $total_amount,
+            'name' => $invoice->name,
+            'email' => $invoice->email,
+            'sub_total' => $cart_total
+        ];
+        $order = Order::with('user')->where('id', $invoice->id)->where('user_id', Auth::id())->first();
+        $orderItem = OrderItem::with('product')->where('order_id', $invoice->id)->orderBy('id', 'DESC')->get();
+
+        $pdf = PDF::loadView('frontend.user.order.order_invoice', compact('order', 'orderItem'));
+        Mail::to($request->email)->send(new OrderMail($pdf,$order->invoice_no,'online'));
+
+        $content = $pdf->download()->getOriginalContent();
+
+        Storage::disk('local')->put($invoice->invoice_no . '.pdf', $content);
+
+        $save_url = 'invoice/' . $invoice->invoice_no . '.pdf';
+
+        Order::where('id', $invoice->id)->update([
+            'invoice' => $save_url
+        ]);
+
+        if(Auth::user()->userrole_id == 2){
+            $mobile = Auth::user()->phone;
+        }else{
+            $mobile = $request->phone;
+        }
+
+        Http::post('http://pay4sms.in/sendsms/?token=9a2edf41bc2760c4c5bb0b592eaf7bfb&credit=2&sender=NITHTX&message=Thank you for your purchase!. Your order is placed and its pending and will be Confirmed shortly. Nithitex. &number=' . $mobile . '');
+
+
+        // End Send Email 
+        $rowId = Cart::where('user_id', Auth::user()->id)->get();
+        Cart::destroy($rowId);
+
+        $datas['order_id'] = $orders->id;
+        $datas['amount'] = $order_id->amount;
+        $message = "Order Placed Successfully";
+        return response()->json(['status' => true, 'message' => $message, 'data' => $datas], 200);
+    }
+
+    public function paymentStatus(Request $request)
+    {
+        $order = Order::where('r_order_id', $request->r_order_id)->update([
+            'payment_status' => $request->payment_status,
+            'r_payment_id' => $request->r_payment_id
+        ]);
+
+        $message = "payment status updated successfully";
+        return response()->json(['status' => true, 'message' => $message], 200);
+    }
+}

@@ -1,0 +1,233 @@
+
+<?php $__env->startSection('admin'); ?>
+<?php $__env->startSection('title'); ?>
+Admin | Nithitex India's No 1 Online Saree Shop
+<?php $__env->stopSection(); ?>
+<?php
+    $orders = App\Models\Order::limit(10)->get();
+?>
+
+  <!-- Content Header (Page header) -->
+  
+        <div class="page-content">
+  
+          <div class="d-flex justify-content-between align-items-center flex-wrap grid-margin">
+            <div>
+              <h3 class="mb-3 mb-md-0">Dashboard</h3>
+            </div>
+            
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center flex-wrap grid-margin">
+            <div>
+              <h4 class="mb-3 mb-md-0">Customers</h4>
+            </div>
+          </div>
+  
+          <div class="row">
+            <div class="col-12 col-xl-12 stretch-card">
+              <div class="row flex-grow">
+                <div class="col-md-3 grid-margin stretch-card">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-baseline">
+                        <h6 class="card-title mb-0">New Customers</h6>
+                      </div>
+                      <div class="row">
+                        <div class="col-12 col-md-12 col-xl-12">
+                          <h3 class="mb-2">3,897</h3>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3 grid-margin stretch-card">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-baseline">
+                        <h6 class="card-title mb-0">All Orders</h6>
+                      </div>
+                      <div class="row">
+                        <div class="col-12 col-md-12 col-xl-12">
+                          <h3 class="mb-2">4,506</h3>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3 grid-margin stretch-card">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-baseline">
+                        <h6 class="card-title mb-0">Pending Orders</h6>
+                      </div>
+                      <div class="row">
+                        <div class="col-12 col-md-12 col-xl-12">
+                          <h3 class="mb-2">1,067</h3>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3 grid-margin stretch-card">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-baseline">
+                        <h6 class="card-title mb-0">Returned Orders</h6>
+                      </div>
+                      <div class="row">
+                        <div class="col-12 col-md-12 col-xl-12">
+                          <h3 class="mb-2">172</h3>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div> <!-- row -->
+
+          <div class="d-flex justify-content-between align-items-center flex-wrap grid-margin">
+            <div>
+              <h4 class="mb-3 mb-md-0">Resellers</h4>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-12 col-xl-12 stretch-card">
+              <div class="row flex-grow">
+                <div class="col-md-3 grid-margin stretch-card">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-baseline">
+                        <h6 class="card-title mb-0">All Resellers</h6>
+                      </div>
+                      <div class="row">
+                        <div class="col-12 col-md-12 col-xl-12">
+                          <h3 class="mb-2">3,503</h3>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3 grid-margin stretch-card">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-baseline">
+                        <h6 class="card-title mb-0">Pending Requests</h6>
+                      </div>
+                      <div class="row">
+                        <div class="col-12 col-md-12 col-xl-12">
+                          <h3 class="mb-2">1,075</h3>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3 grid-margin stretch-card">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-baseline">
+                        <h6 class="card-title mb-0">All Orders</h6>
+                      </div>
+                      <div class="row">
+                        <div class="col-12 col-md-12 col-xl-12">
+                          <h3 class="mb-2">1,865</h3>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3 grid-margin stretch-card">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-baseline">
+                        <h6 class="card-title mb-0">Pending Orders</h6>
+                      </div>
+                      <div class="row">
+                        <div class="col-12 col-md-12 col-xl-12">
+                          <h3 class="mb-2">268</h3>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div> <!-- row -->
+
+          <div class="row">
+            <div class="col-lg-12 col-xl-12 stretch-card">
+              <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Order List</h3>
+                </div>
+                <div class="card-body">
+                    <div class="col-md-12">
+                        <div class="table-responsive">
+                            <table id="example1" class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Invoice</th>
+                                        <th>Customer Type</th>
+                                        <th>Customer Name</th>
+                                        <th>Total Price</th>
+                                        <th>Delivery Status</th>
+                                        <th>Payment Status</th>
+                                        <th>Payment Method</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyList">
+                                    <?php
+                                        $serialNo = 1;
+                                    ?>
+                                    <?php $__currentLoopData = $orders; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <tr style="height:25px;">
+                                        <td><?php echo e($serialNo); ?></td>
+                                        <td><?php echo e($item->invoice_no); ?></td>
+                                        <td><?php echo e($item->userrole->user_role); ?></td>
+                                        <td><?php if($item->userrole_id == 1): ?><?php echo e($item->user->name); ?> <?php else: ?> <?php echo e($item->seller->name); ?><?php endif; ?></td>
+                                        <td><?php echo e($item->amount); ?></td>
+                                        <td>
+                                            <?php if($item->status == '0'): ?>        
+                                              <span class="badge badge-pill badge-warning text-white" style="background: #800080;"> Pending </span>
+                                              <?php elseif($item->status == '1'): ?>
+                                              <span class="badge badge-pill badge-warning text-white" style="background: #0000FF;"> Confirm </span>
+                                              <?php elseif($item->status == '2'): ?>
+                                              <span class="badge badge-pill badge-warning text-white" style="background: #FFA500;"> Processing </span>
+                                    
+                                              <?php elseif($item->status == '3'): ?>
+                                              <span class="badge badge-pill badge-warning text-white" style="background: #808000;"> Picked </span>
+                                    
+                                              <?php elseif($item->status == '4'): ?>
+                                              <span class="badge badge-pill badge-warning text-white" style="background: #808080;"> Shipped </span>
+                                    
+                                              <?php elseif($item->status == '5'): ?>
+                                              <span class="badge badge-pill badge-warning text-white" style="background: #008000;"> Delivered </span>
+                                              <?php elseif($item->status == '6'): ?>
+                                              <span class="badge badge-pill badge-warning text-white" style="background: #80000b;"> Cancelled </span>
+                                            <?php endif; ?> 
+                                        </td>
+                                        <td><span class="badge badge-pill badge-danger text-white"><?php echo e($item->payment_status); ?> </span></td>
+                                        <td><?php echo e($item->payment_type); ?></td>    
+                                        <td>
+                                            <a href="<?php echo e(route('order.details',$item->id)); ?>" class="btn btn-info" title="View / Edit Data">View / Edit</a>
+                                        </td>        
+                                    </tr>
+                                    <?php
+                                        $serialNo++;
+                                    ?>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+          </div> 
+        </div>
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('admin.admin_master', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\xampp\htdocs\Laravel-Nithitex\nithitex\resources\views/admin/index.blade.php ENDPATH**/ ?>

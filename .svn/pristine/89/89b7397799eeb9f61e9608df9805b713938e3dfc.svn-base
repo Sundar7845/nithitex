@@ -1,0 +1,115 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\User;
+use Illuminate\Http\Request;
+use App\Traits\ResponseAPI;
+use Exception;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Response;
+
+class CategoryController extends Controller
+{
+    use ResponseAPI;
+
+    public function category()
+    {
+        try {
+        $responseData=[];
+
+        $responseData['category']=[];
+        $category = Category::get();
+        foreach ($category as $item) {
+            $categoryDetails['id'] = $item->id;
+            $categoryDetails['category_name'] = $item->category_name;
+            $categoryDetails['category_image'] = url($item->category_image);
+            array_push($responseData['category'],$categoryDetails);
+        }
+
+        return response()->json(['data' => $responseData], 200);
+    } catch (Exception $e) {
+        return $this->error($e->getMessage(), $e->getCode());
+    }
+    
+    }
+
+    // public function categoryImage($id)
+    // {
+    //     try {
+    //     $category = category::where('id',$id)->pluck('category_image')->first();
+    //     $path = public_path($category);
+    //     if (!File::exists($path)) 
+    //     {
+    //         abort(404);
+    //     }
+    //     $file = File::get($path);
+    //     $type = File::mimeType($path);
+    //     $response = Response::make($file, 200);
+    //     $response->header("Content-Type", $type);
+    //     return $response;
+    // } catch (Exception $e) {
+    //     return $this->error($e->getMessage(), $e->getCode());
+    // }
+    // }
+
+    public function categoryList(Request $request,$id)
+    {
+        try {
+            $responseData=[];
+    
+            $responseData['category_list']=[];
+            $user_id = array($request->user_id);
+            if($user_id){
+                $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+                $query->leftJoin('wishlists',function($join) {
+                                        $join->on('wishlists.product_id','=','products.id')
+                                        ->where("wishlists.user_id",'=',DB::raw('?'));
+                                    })->setBindings(array_merge($query->getBindings(),$user_id));
+
+                $category = $query->where('is_offers','=',0)
+                                ->where('products.category_id','=',$id)
+                                ->where('products.current_stock','>',0)
+                                ->get();
+            }else{
+                $category = Product::where('products.category_id','=',$id)
+                                    ->where('products.current_stock','>',0)
+                                    ->get();
+            }
+
+            foreach ($category as $item) {
+                $categoryDetails['product_id'] = $item->id;
+                $categoryDetails['category_id'] = $item->category_id;
+
+                $categories = Category::where('id',$item->category_id)->pluck('category_name')->first();
+
+                $categoryDetails['category_name'] = $categories;
+                $categoryDetails['product_name'] = $item->product_name;
+                $categoryDetails['product_price'] = $item->product_price;
+                if($this->role($request->user_id)){
+                    $productDetails['product_discount'] = $item->product_discount;
+                }else{
+                    $productDetails['product_discount'] = $item->seller_discount;
+                }
+                $categoryDetails['product_image'] = url($item->product_image);
+                $categoryDetails['is_favourite'] = $item->is_favourite;
+                array_push($responseData['category_list'],$categoryDetails);
+            }
+            
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+
+    }
+
+        private function role($user_id)
+        {
+            return User::where('id',$user_id)->pluck('userrole_id')->first();
+        }
+}

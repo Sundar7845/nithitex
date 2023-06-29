@@ -1,0 +1,121 @@
+@extends('admin.admin_master')
+@section('admin')
+@section('title')
+    Coupon
+@endsection
+<div class="page-content">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h5>Generate Coupon</h5>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Home</a></li>
+                        <li class="breadcrumb-item active">Settings</li>
+                        <li class="breadcrumb-item active">Coupon</li>
+                    </ol>
+                </div>
+            </div>
+        </div><!-- /.container-fluid -->
+    </section>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div id="divCategory" class="col-lg-4 col-md-4">
+                            <form method="post" action="" enctype="multipart/form-data">
+                                @csrf
+                                <input type="hidden" name="id" value="">
+                                <input type="hidden" name="old_image" value="">
+                                <div class="form-group">
+                                    <label>Coupon Name</label>
+                                    <input type="text" name="coupon_name" placeholder="Enter Coupon Name"
+                                        class="form-control" autocomplete="off" required>
+                                    @error('coupon_name')
+                                        <span class="text-danger">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                                <div class="form-group">
+                                    <label>Start Date</label>
+                                    <input type="date" name="start_date" class="form-control" autocomplete="off"
+                                        required>
+                                    @error('start_date')
+                                        <span class="text-danger">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                                <div class="form-group">
+                                    <label>End Date</label>
+                                    <input type="date" name="end_date" class="form-control" autocomplete="off"
+                                        required>
+                                    @error('end_date')
+                                        <span class="text-danger">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                                <div class="form-group">
+                                    <label>Coupon Code</label>
+                                    <input type="text" name="coupon_code" placeholder="Enter Coupon Code"
+                                        class="form-control" autocomplete="off" required>
+                                    @error('coupon_code')
+                                        <span class="text-danger">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                                <div class="form-group">
+                                    <input type="checkbox" name="common"> <span>Common</span>
+                                    @error('coupon_name')
+                                        <span class="text-danger">{{ $message }}</span>
+                                    @enderror
+                                </div>
+
+                                <div class="form-group">
+                                    <button type="submit" id="btnSave" class="btn btn-success">Save</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <h5>Coupon List</h5>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="col-md-12">
+                            <div class="table-responsive">
+                                <table id="example1" class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Coupon Name</th>
+                                            <th>Coupon Name</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyList">
+                                        @php
+                                            $serialNo = 1;
+                                        @endphp
+                                        {{-- @foreach ($ as $item) --}}
+                                            <tr>
+                                                <td>{{ $serialNo }}</td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            @php
+                                                $serialNo++;
+                                            @endphp
+                                        {{-- @endforeach --}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection

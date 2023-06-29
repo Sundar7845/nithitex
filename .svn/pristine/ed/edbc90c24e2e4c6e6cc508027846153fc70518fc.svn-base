@@ -1,0 +1,109 @@
+
+<?php $__env->startSection('admin'); ?>
+<?php $__env->startSection('title'); ?>
+Order List 
+<?php $__env->stopSection(); ?>
+<div class="page-content">
+    <section class="content-header">
+        <div class="container-fluid">
+          <div class="row mb-2">
+            <div class="col-sm-6">
+              <h5>Order List </h5>
+            </div>
+            <div class="col-sm-6">
+              <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item"><a href="<?php echo e(route('dashboard')); ?>">Home</a></li>
+                <li class="breadcrumb-item active">Master</li>
+                <li class="breadcrumb-item active">Order List</li>
+              </ol>
+            </div>
+          </div>
+        </div><!-- /.container-fluid -->
+    </section>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    
+                </div>
+                <div class="card-body">
+                    <div class="col-md-12">
+                        <div class="table-responsive">
+                            <table id="dataTableExample" class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Invoice</th>
+                                        <th>Customer</th>
+                                        <th>Total Price</th>
+                                        <th>Delivery Status</th>
+                                        <th>Payment Status</th>
+                                        <th>Payment Method</th>
+                                        <th>Shipping Label</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyList">
+                                    <?php
+                                        $serialNo = 1;
+                                    ?>
+                                    <?php $__currentLoopData = $sellerorders; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <tr id="emptyRow" style="height: 25px;">
+                                        <td><?php echo e($serialNo); ?></td>
+                                        <td><?php echo e($item->invoice_no); ?></td>
+                                        <td><?php if($item->userrole_id == 1): ?><?php echo e($item->user->name); ?> <?php else: ?> <?php echo e($item->seller->name); ?><?php endif; ?></td>
+                                        <td><?php echo e($item->amount); ?></td>
+                                        <td>
+                                        <label for="">                            
+                                            <?php if($item->status == 'pending'): ?>        
+                                                <span class="badge badge-pill badge-warning text-white" style="background: #800080;"> Pending </span>
+                                                <?php elseif($item->status == 'confirmed'): ?>
+                                                 <span class="badge badge-pill badge-warning text-white" style="background: #0000FF;"> Confirm </span>
+                                                  <?php elseif($item->status == 'processing'): ?>
+                                                 <span class="badge badge-pill badge-warning text-white" style="background: #FFA500;"> Processing </span>
+                                        
+                                                  <?php elseif($item->status == 'picked'): ?>
+                                                 <span class="badge badge-pill badge-warning text-white" style="background: #808000;"> Picked </span>
+                                        
+                                                  <?php elseif($item->status == 'shipped'): ?>
+                                                 <span class="badge badge-pill badge-warning text-white" style="background: #808080;"> Shipped </span>
+                                        
+                                                  <?php elseif($item->status == 'delivered'): ?>
+                                                 <span class="badge badge-pill badge-warning text-white" style="background: #008000;"> Delivered </span>
+                                                 <?php elseif($item->status == 'cancelled'): ?>
+                                                 <span class="badge badge-pill badge-warning text-white" style="background: #80000b;"> Cancelled </span>
+                                            <?php endif; ?>    
+                                        </label>
+                                    </td>
+                                        
+                                        <td>
+                                            <label for="">
+                                            <?php if($item->payment_status == 'paid'): ?>
+                                            <a class="badge badge-pill badge-warning text-white" style="background: #008000;" href="<?php echo e(route('seller.order.unpaid_status.update',$item->id)); ?>"> Paid </a>
+                                            <?php elseif($item->payment_status == 'Unpaid'): ?>
+                                            <a class="badge badge-pill badge-warning text-white" style="background: #f50418;" href="<?php echo e(route('seller.order.paid_status.update',$item->id)); ?>"> UnPaid </a>
+                                            <?php endif; ?>
+                                            </label>                   
+                                        </td>
+                                        <td><?php echo e($item->payment_type); ?></td>    
+                                        <td><a class="btn btn-success" href="<?php echo e(route('order.print.modal',$item->id)); ?>"  class="btn btn-success">Print</a></td>
+                                        <td>
+                                            <a href="<?php echo e(route('seller.order.details',$item->id)); ?>" class="btn btn-info" title="Edit Data"><i class="fa fa-eye"></i>Edit </a>
+                                        </td>        
+                                    </tr>
+                                    <?php
+                                        $serialNo++;
+                                    ?>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('admin.admin_master', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\xampp\htdocs\Laravel-Nithitex\nithitex\resources\views/backend/orders/seller_all_orders.blade.php ENDPATH**/ ?>

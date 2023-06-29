@@ -1,0 +1,93 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\User;
+use Illuminate\Http\Request;
+use App\Traits\ResponseAPI;
+use Exception;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Response;
+
+class FeatureController extends Controller
+{
+    use ResponseAPI;
+
+    public function feature(Request $request)
+    {
+        try {
+        $responseData=[];
+
+        $responseData['is_feature']=[];
+        $user_id = array($request->user_id);
+        if($user_id){
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists',function($join) {
+                                        $join->on('wishlists.product_id','=','products.id')
+                                        ->where("wishlists.user_id",'=',DB::raw('?'));
+                                    })->setBindings(array_merge($query->getBindings(),$user_id));
+                                    
+            $feature = $query->where('is_offers','=',0)
+                            ->where('is_featured','=',1)
+                            ->where('current_stock','>',0)
+                            ->limit(20)->inRandomOrder()
+                        ->get();
+        }else{
+            $feature = Product::where('is_featured','=',1)
+                    ->where('current_stock','>',0)
+                    ->limit(20)->inRandomOrder()->get();
+        }
+        foreach ($feature as $item) {
+            $featureDetails['product_id'] = $item->id;
+
+            $category = Category::where('id',$item->category_id)->pluck('category_name')->first();
+            // $role = $this->role($request->user_id);dd($role);
+            $featureDetails['category_id'] = $item->category_id;
+            $featureDetails['category_name'] = $category;
+            $featureDetails['product_name'] = $item->product_name;
+            $featureDetails['product_price'] = $item->product_price;
+            if($this->role($request->user_id) == 1){
+                $featureDetails['product_discount'] = $item->product_discount;
+            }else{
+                $featureDetails['product_discount'] = $item->seller_discount;
+            }
+            $featureDetails['product_image'] = url($item->product_image);
+            $featureDetails['is_favourite'] = $item->is_favourite;
+            array_push($responseData['is_feature'],$featureDetails);
+        }
+        
+            return response()->json(['data' => $responseData], 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    private function role($user_id)
+        {
+           return User::where('id',$user_id)->pluck('userrole_id')->first();
+        }
+
+    // public function featureImage($id)
+    // {
+    //     try {
+    //     $feature = product::where('id',$id)->pluck('product_image')->first();
+    //     $path = public_path($feature);
+    //     if (!File::exists($path))
+    // {
+    //     abort(404);
+    // }
+    //     $file = File::get($path);
+    //     $type = File::mimeType($path);
+    //     $response = Response::make($file, 200);
+    //     $response->header("Content-Type", $type);
+    //     return $response;
+    // } catch (Exception $e) {
+    //     return $this->error($e->getMessage(), $e->getCode());
+    // }
+    // }
+}

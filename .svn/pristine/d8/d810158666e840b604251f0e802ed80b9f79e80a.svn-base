@@ -1,0 +1,146 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\ProductMultipleImage;
+use Illuminate\Http\Request;
+use App\Traits\ResponseAPI;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Response;
+
+class ProductController extends Controller
+{
+    use ResponseAPI;
+
+    public function product(Request $request,$id)
+    {
+        try {
+            $responseData=[];
+    
+            $responseData['product']=[];
+            $user_id = array($request->user_id);
+            if($user_id){
+                $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+                $query->leftJoin('wishlists',function($join) {
+                                        $join->on('wishlists.product_id','=','products.id')
+                                        ->where("wishlists.user_id",'=',DB::raw('?'));
+                                    })->setBindings(array_merge($query->getBindings(),$user_id));
+                $product = $query->where('products.id','=',$id)
+                                ->get();
+            }else{
+                $product = Product::where('products.id','=',$id)->get();
+            }
+            foreach ($product as $item) {
+                $productDetails['id'] = $item->id;
+    
+                $category = Category::where('id',$item->category_id)->pluck('category_name')->first();
+
+                $amount = $item->product_price - $item->product_discount;
+                $discount = ($amount/$item->product_price) * 100;
+            
+                $productDetails['category_id'] = $item->category_id;
+                $productDetails['category_name'] = $category;
+                $productDetails['product_name'] = $item->product_name;
+                $productDetails['product_price'] = $item->product_price;
+                $productDetails['product_discount'] = $item->product_discount;
+                $productDetails['short_description'] = $item->short_description;
+                $productDetails['long_description'] = $item->long_description;
+                $productDetails['current_stock'] = $item->current_stock;
+                $productDetails['product_sku'] = $item->product_sku;
+                $productDetails['discount_percentage'] = round($discount);
+                $productDetails['product_image'] = url($item->product_image);
+                $productDetails['product_url'] = url('/product/details/'.$item->id.'/'.$item->product_slug);
+                $productDetails['is_favourite'] = $item->is_favourite;
+                $productDetails['color_id'] = $item->color_id;
+                $productDetails['color_name'] = $item->color_name;
+                $productDetails['color_code'] = $item->color_code;
+
+                $multiImage = ProductMultipleImage::where('product_id',$item->id)->get();
+                $multiImagedetails=[];
+                $productDetails['product_multiple_image']=[];
+
+                foreach($multiImage as $item)
+                {
+                    $multiImagedetails['id']=$item->id;
+                    $multiImagedetails['product_id']=$item->product_id;
+                    $multiImagedetails['product_multiple_image']=url($item->product_mult_image);
+                    array_push($productDetails['product_multiple_image'],$multiImagedetails);
+                }
+                array_push($responseData['product'],$productDetails);
+            }
+            
+            return response()->json(['data' => $responseData], 200);
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    // public function productImage($id)
+    // {
+    //     try {
+    //     $product = ProductMultipleImage::where('product_id',$id)->pluck('product_mult_image')->first();
+    //     $path = public_path($product);
+    //     if (!File::exists($path))
+    // {
+    //     abort(404);
+    // }
+    //     $file = File::get($path);
+    //     $type = File::mimeType($path);
+    //     $response = Response::make($file, 200);
+    //     $response->header("Content-Type", $type);
+    //     return $response;
+    // } catch (\Exception $e) {
+    //     return $this->error($e->getMessage(), $e->getCode());
+    // }
+    // }
+
+    public function search(Request $request,$search_value)
+  {
+    
+    $responseData=[];
+    $user_id = array($request->user_id);
+    if($user_id){
+        $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+        $query->leftJoin('wishlists',function($join) {
+                                $join->on('wishlists.product_id','=','products.id')
+                                ->where("wishlists.user_id",'=',DB::raw('?'));
+                            })->setBindings(array_merge($query->getBindings(),$user_id));
+        $results = $query->where('is_offers','=',0)
+                        ->where('current_stock','>',0)
+                        ->where('products.product_name','like','%'. $search_value. '%')
+                        ->orWhere('product_sku', 'LIKE', '%'. $search_value. '%')
+                        ->get();
+    }else{
+        $results = Product::where('current_stock','>',0)
+                          ->where('is_offers','=',0)
+                          ->where('products.product_name','like','%'. $search_value. '%')
+                          ->orWhere('product_sku', 'LIKE', '%'. $search_value. '%')
+                          ->get();
+    }
+    foreach($results as $item)
+    {
+      $searchDetails['product_id'] = $item->id;
+      $searchDetails['product_name'] = $item->product_name;
+      $searchDetails['category_id'] = $item->category_id;
+      $searchDetails['category_name'] = $item->category_name;
+      $searchDetails['product_price'] = $item->product_price;
+      $searchDetails['product_discount'] = $item->product_discount;
+      $searchDetails['product_image'] = url($item->product_image);
+      $searchDetails['is_favourite'] = $item->is_favourite;
+      array_push($responseData,$searchDetails);
+    }
+    if(count($results)){
+      return Response()->json(['data'=> $responseData]);
+    }
+    else
+    {
+      return response()->json(['status' => false,'message' => 'No Data not found'], 404);
+    }
+    
+  }
+}

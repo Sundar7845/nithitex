@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Http\Controllers\backend;
+
+use App\Http\Controllers\Controller;
+use App\Models\About;
+use App\Traits\Utils;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Intervention\Image\Facades\Image;
+
+class SettingsController extends Controller
+{
+    use Utils;
+    public function aboutView()
+    {
+        $about = About::first();
+        if ($this->checkUserPermission(Auth::user()->hasPermissionTo('Company About'), Auth::user()->id)) {
+			return view('backend.settings.about-us.about-us',compact('about'));
+		} else {
+			return view('401');
+		}
+    }
+
+    public function store(Request $request)
+    {
+        $aboutcount = About::get()->count();
+        $image = $request->file('about_image');
+        if($image){
+            $name_gen = hexdec(uniqid()).'.'.$image->getClientOriginalExtension();
+            Image::make($image)->save('upload/products/about-us/'.$name_gen);
+            $save_url = 'upload/products/about-us/'.$name_gen;
+        }
+        else {
+            $save_url = About::where('id',1)->pluck('about_image')->first();
+        }
+
+        if($aboutcount > 0) {
+            About::findOrFail(1)->update([
+                'about_description' => $request->about_description,
+                'about_image' => $save_url
+            ]);
+        }
+        else {
+            About::create([
+                'about_description' => $request->about_description,
+                'about_image' => $save_url
+            ]);
+        }
+
+        $notification = array(
+			'message' => 'About Us '.(($aboutcount > 0) ? 'Updated' : 'Created').' Successfully',
+			'alert-type' => 'success'
+		);
+		
+		return redirect()->back()->with($notification);
+    }
+}

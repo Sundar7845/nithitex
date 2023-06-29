@@ -1,0 +1,380 @@
+<?php
+
+namespace App\Traits;
+
+use App\Models\Cart;
+use App\Models\Category;
+use App\Models\Coupon;
+use App\Models\Product;
+use App\Models\User;
+use Carbon\Carbon;
+use DB;
+
+trait Utils
+{
+    /**
+     * This will return all products
+     */
+    public function getAllProducts($user_id)
+    {
+        if ($user_id == 0) {
+            $query = Product::where('current_stock', '>', 0);
+        } else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists', function ($join) {
+                $join->on('wishlists.product_id', '=', 'products.id')
+                    ->where("wishlists.user_id", '=', Db::raw('?'));
+            })->setBindings(array_merge($query->getBindings(), $user_id));
+
+            $query = $query->where('current_stock', '>', 0);
+        }
+
+        return $query;
+    }
+
+    /**
+     * This will return products without offers
+     */
+    public function getProducts($user_id)
+    {
+        if ($user_id == 0) {
+            $query = Product::where('is_offers', '=', 0)
+                ->where('current_stock', '>', 0);
+        } else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists', function ($join) {
+                $join->on('wishlists.product_id', '=', 'products.id')
+                    ->where("wishlists.user_id", '=', Db::raw('?'));
+            })->setBindings(array_merge($query->getBindings(), $user_id));
+
+            $query = $query->where('is_offers', '=', 0)
+                ->where('current_stock', '>', 0);
+        }
+
+        return $query;
+    }
+    /**
+     * This will return offer products only 
+     */
+    public function getOfferProducts($user_id)
+    {
+        if ($user_id == 0) {
+            $query = Product::where('is_offers', '=', 1)
+                ->where('current_stock', '>', 0);
+        } else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists', function ($join) {
+                $join->on('wishlists.product_id', '=', 'products.id')
+                    ->where("wishlists.user_id", '=', DB::raw('?'));
+            })->setBindings(array_merge($query->getBindings(), $user_id));
+
+            $query = $query->where('is_offers', '=', 1)
+                ->where('current_stock', '>', 0);
+        }
+        return $query;
+    }
+
+    /**
+     * This will return single product details
+     */
+    public function getProductDetails($id, $user_id)
+    {
+        $isoffer = Product::where('id', $id)->pluck('is_offers')->first();
+        if ($user_id == 0) {
+            $query = Product::where('current_stock', '>', 0)
+                ->where('products.id', '=', $id);
+        } else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists', function ($join) {
+                $join->on('wishlists.product_id', '=', 'products.id')
+                    ->where("wishlists.user_id", '=', DB::raw('?'));
+            })->setBindings(array_merge($query->getBindings(), $user_id));
+
+            $query = $query->where('current_stock', '>', 0)
+                ->where('products.id', '=', $id);
+        }
+        if ($isoffer) {
+            $query = $query->where('is_offers', '=', 1);
+        } else {
+            $query = $query->where('is_offers', '=', 0);
+        }
+
+        return $query;
+    }
+    /**
+     * This will return related products under category except viewing product
+     */
+    public function getRelatedProducts($cat_id, $id, $user_id)
+    {
+        if ($user_id == 0) {
+            $query = Product::where('is_offers', '=', 0)
+                ->where('current_stock', '>', 0)
+                ->where('products.id', '!=', $id)
+                ->where('products.category_id', $cat_id)
+                ->inRandomOrder()
+                ->limit(15);
+        } else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists', function ($join) {
+                $join->on('wishlists.product_id', '=', 'products.id')
+                    ->where("wishlists.user_id", '=', DB::raw('?'));
+            })->setBindings(array_merge($query->getBindings(), $user_id));
+
+            $query = $query->where('is_offers', '=', 0)
+                ->where('current_stock', '>', 0)
+                ->where('products.id', '!=', $id)
+                ->where('products.category_id', $cat_id)
+                ->inRandomOrder()
+                ->limit(15);
+        }
+        return $query;
+    }
+    /**
+     * This will return products by colors
+     */
+    public function getProductsByColor($user_id, $sel_color)
+    {
+        if ($user_id == 0) {
+            $query = Product::where('is_offers', '=', 0)
+                ->where('current_stock', '>', 0);
+        } else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists', function ($join) {
+                $join->on('wishlists.product_id', '=', 'products.id')
+                    ->where("wishlists.user_id", '=', Db::raw('?'));
+            })->setBindings(array_merge($query->getBindings(), $user_id));
+
+            $query = $query->where('is_offers', '=', 0)
+                ->where('current_stock', '>', 0);
+        }
+
+        if ($sel_color != "") {
+            if ($user_id == 0) {
+                $query = $query->join('colors', 'colors.id', 'products.color_id')
+                    ->where('color_id', $sel_color)
+                    ->select('products.*', 'colors.color_name');
+            } else {
+                $query = $query->join('colors', 'colors.id', 'products.color_id')
+                    ->where('color_id', $sel_color)
+                    ->select('wishlists.is_favourite', 'wishlists.user_id', 'products.*', 'colors.color_name');
+            }
+        }
+        return $query;
+    }
+
+    /**
+     * This will return products by colors against product types(all (0), offers (1), featured (2), bestselling (3) and new arrivals (4))
+     */
+    public function getProductsColorByProductType($user_id, $sel_color, $product_type)
+    {
+        if ($user_id == 0) {
+            $query = Product::where('is_offers', '=', ($product_type == 1 ? 1 : 0))
+                ->where('current_stock', '>', 0);
+        } else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists', function ($join) {
+                $join->on('wishlists.product_id', '=', 'products.id')
+                    ->where("wishlists.user_id", '=', Db::raw('?'));
+            })->setBindings(array_merge($query->getBindings(), $user_id));
+
+            $query = $query->where('is_offers', '=', ($product_type == 1 ? 1 : 0))
+                ->where('current_stock', '>', 0);
+        }
+
+        if ($sel_color != "") {
+            if ($user_id == 0) {
+                $query = $query->join('colors', 'colors.id', 'products.color_id')
+                    ->where('color_id', $sel_color)
+                    ->select('products.*', 'colors.color_name');
+            } else {
+                $query = $query->join('colors', 'colors.id', 'products.color_id')
+                    ->where('color_id', $sel_color)
+                    ->select('wishlists.is_favourite', 'wishlists.user_id', 'products.*', 'colors.color_name');
+            }
+        }
+        return $query;
+    }
+
+    /**
+     * This will return products by sort order (latest product, product name, price low to high, price high to low, qty low to high, qty high to low)
+     */
+    public function getProductsBySort($user_id, $sort_by)
+    {
+        if ($user_id == 0) {
+            $query = Product::where('is_offers', '=', 0)
+                ->where('current_stock', '>', 0);
+        } else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists', function ($join) {
+                $join->on('wishlists.product_id', '=', 'products.id')
+                    ->where("wishlists.user_id", '=', Db::raw('?'));
+            })->setBindings(array_merge($query->getBindings(), $user_id));
+
+            $query = $query->where('is_offers', '=', 0)
+                ->where('current_stock', '>', 0);
+        }
+
+        if ($sort_by == 'latest_product') {
+            $query = $query->orderBy('id', 'DESC');
+        } elseif ($sort_by == 'product_name') {
+            $query = $query->orderBy('product_name', 'ASC');
+        } elseif ($sort_by == 'p_low_to_high') {
+            $query = $query->orderBy('product_discount', 'ASC');
+        } elseif ($sort_by == 'p_high_to_low') {
+            $query = $query->orderBy('product_discount', 'DESC');
+        } elseif ($sort_by == 'q_low_to_high') {
+            $query = $query->orderBy('current_stock', 'ASC');
+        } elseif ($sort_by == 'q_high_to_low') {
+            $query = $query->orderBy('current_stock', 'DESC');
+        }
+        return $query;
+    }
+
+    /**
+     * This will return products by sort order against product types(all (0), offers (1), featured (2), bestselling (3) and new arrivals (4))
+     */
+    public function getProductsSortByProductType($user_id, $sort_by, $product_type)
+    {
+        if ($user_id == 0) {
+            $query = Product::where('is_offers', '=', ($product_type == 1 ? 1 : 0))
+                ->where('current_stock', '>', 0);
+        } else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists', function ($join) {
+                $join->on('wishlists.product_id', '=', 'products.id')
+                    ->where("wishlists.user_id", '=', Db::raw('?'));
+            })->setBindings(array_merge($query->getBindings(), $user_id));
+
+            $query = $query->where('is_offers', '=', ($product_type == 1 ? 1 : 0))
+                ->where('current_stock', '>', 0);
+        }
+
+        if ($sort_by == 'latest_product') {
+            $query = $query->orderBy('id', 'DESC');
+        } elseif ($sort_by == 'product_name') {
+            $query = $query->orderBy('product_name', 'ASC');
+        } elseif ($sort_by == 'p_low_to_high') {
+            $query = $query->orderBy('product_discount', 'ASC');
+        } elseif ($sort_by == 'p_high_to_low') {
+            $query = $query->orderBy('product_discount', 'DESC');
+        } elseif ($sort_by == 'q_low_to_high') {
+            $query = $query->orderBy('current_stock', 'ASC');
+        } elseif ($sort_by == 'q_high_to_low') {
+            $query = $query->orderBy('current_stock', 'DESC');
+        }
+        return $query;
+    }
+
+    /**
+     * This will return product details as list array
+     */
+    public function getProductLists($products, $user_id)
+    {
+        $responseData = [];
+        $responseData['product_list'] = [];
+
+        foreach ($products as $item) {
+            $productDetails['product_id'] = $item->id;
+            $productDetails['category_id'] = $item->category_id;
+
+            $categories = Category::where('id', $item->category_id)->pluck('category_name')->first();
+
+            $productDetails['category_name'] = $categories;
+            $productDetails['product_name'] = $item->product_name;
+            $productDetails['product_price'] = $item->product_price;
+            if ($this->getRoleId($user_id) == 2) {
+                $productDetails['product_discount'] = $item->seller_discount;
+            } else {
+                $productDetails['product_discount'] = $item->product_discount;
+            }
+            $productDetails['product_image'] = url($item->product_image);
+            $productDetails['is_favourite'] = $item->is_favourite;
+            array_push($responseData['product_list'], $productDetails);
+        }
+
+        return $responseData;
+    }
+    /**
+     * This will return role id for given user id
+     */
+    public function getRoleId($user_id)
+    {
+        return User::where('id', $user_id)->pluck('userrole_id')->first();
+    }
+    /**
+     * This will return role id for given user email
+     */
+    public function getRoleIdByEmail($email)
+    {
+        return User::where('email', $email)->pluck('userrole_id')->first();
+    }
+    /**
+     * This will return role id for given user phone
+     */
+    public function getRoleIdByPhone($phone)
+    {
+        return User::where('phone', $phone)->pluck('userrole_id')->first();
+    }
+
+    /**
+     * This will check the admin panel menu permissions for staffs
+     */
+    public function checkUserPermission($formPermission, $user_id)
+    {
+        if ($formPermission || $user_id == 1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function couponCalc($coupon_code, $userrole_id, $user_coupon_id)
+    {
+        $current_date = Carbon::today();
+        $coupon_id = Coupon::where('coupon_code', $coupon_code)->pluck('id')->first();
+        if ($userrole_id == 2) {
+            if ($user_coupon_id == $coupon_id) {
+                return User::join('coupons', 'coupons.id', 'users.coupon_id')->where('coupon_id', $coupon_id)
+                    ->where('coupons.start_date', '<=', $current_date)
+                    ->where('coupons.end_date', '>=', $current_date)
+                    ->first();
+            } else {
+                return Coupon::where('id', $coupon_id)->where('coupons.start_date', '<=', $current_date)
+                    ->where('coupons.end_date', '>=', $current_date)
+                    ->where('is_common', 1)->where('is_active', 1)
+                    ->first();
+            }
+        } else {
+            return Coupon::where('coupon_code', $coupon_code)
+                ->where('start_date', '<=', $current_date)
+                ->where('end_date', '>=', $current_date)
+                ->where('is_active', 1)->where('is_common', 1)
+                ->first();
+        }
+    }
+
+    public function validateOutOfStock($cart_true, $user_id, $buy_product_id, $buy_product_qty)
+    {
+        if ($cart_true == 1) {
+            $carts = Cart::where('user_id', $user_id)->get();
+            // dd($carts);
+            if ($carts->count() > 0) {
+                foreach ($carts as $cart) {
+                    $product = Product::where('id', $cart->product_id)->first();
+                    // dd($product->current_stock >= 0 && $cart->qty >= $product->current_stock);
+                    if ($cart->qty > $product->current_stock) {
+                        return true;
+                    }
+                }
+            } else {
+                return true;
+            }
+        } else {
+            $product = Product::where('id', $buy_product_id)->first();
+            if ($buy_product_qty > $product->current_stock) {
+                return true;
+            }
+        }
+        return false;
+    }
+}

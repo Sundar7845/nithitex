@@ -1,0 +1,187 @@
+<?php
+
+namespace App\Traits;
+
+use App\Models\Product;
+use App\Models\User;
+use DB;
+
+trait Utils
+{
+
+    public function getProducts($user_id)
+    {
+        if($user_id == 0) {
+            $query = Product::where('is_offers','=',0)
+                            ->where('current_stock','>',0);
+        }
+        else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists',function($join) {
+                    $join->on('wishlists.product_id','=','products.id')
+                    ->where("wishlists.user_id",'=',Db::raw('?'));
+            })->setBindings(array_merge($query->getBindings(),$user_id));
+    
+            $query = $query->where('is_offers','=',0)
+                            ->where('current_stock','>',0);
+        }
+        
+        return $query;
+    }
+    public function getOfferProducts($user_id)
+    {
+        if($user_id == 0) {
+            $query = Product::where('is_offers','=',1)
+                            ->where('current_stock','>',0);
+        }
+        else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists',function($join) {
+                    $join->on('wishlists.product_id','=','products.id')
+                    ->where("wishlists.user_id",'=',DB::raw('?'));
+            })->setBindings(array_merge($query->getBindings(),$user_id));
+
+            $query = $query->where('is_offers','=',1)
+                            ->where('current_stock','>',0);
+        }
+        return $query;
+    }
+
+    public function getProductDetails($id, $user_id)
+    {
+        $isoffer = Product::where('id', $id)->pluck('is_offers')->first();
+        if($user_id == 0) {
+            $query = Product::where('current_stock','>',0)
+                            ->where('products.id','=',$id);
+        }
+        else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists',function($join) {
+                    $join->on('wishlists.product_id','=','products.id')
+                    ->where("wishlists.user_id",'=',DB::raw('?'));
+            })->setBindings(array_merge($query->getBindings(),$user_id));
+
+            $query = $query->where('current_stock','>',0)
+                            ->where('products.id','=',$id);
+        }
+        if($isoffer) {
+            $query = $query->where('is_offers','=',1);
+        }
+        else {
+            $query = $query->where('is_offers','=',0);
+        }
+
+        return $query;
+    }
+
+    public function getRelatedProducts($cat_id, $id, $user_id) {
+        if($user_id == 0) {
+            $query = Product::where('is_offers','=',0)
+                            ->where('current_stock','>',0)
+                            ->where('products.id','!=',$id)
+                            ->where('products.category_id',$cat_id)
+                            ->inRandomOrder()
+                            ->limit(15);
+        }
+        else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists',function($join) {
+                    $join->on('wishlists.product_id','=','products.id')
+                    ->where("wishlists.user_id",'=',DB::raw('?'));
+            })->setBindings(array_merge($query->getBindings(),$user_id));
+
+            $query = $query->where('is_offers','=',0)
+                            ->where('current_stock','>',0)
+                            ->where('products.id','!=',$id)
+                            ->where('products.category_id',$cat_id)
+                            ->inRandomOrder()
+                            ->limit(15);
+        }
+        return $query;
+    }
+
+    public function getProductsByColor($user_id, $sel_color)
+    {
+        if($user_id == 0) {
+            $query = Product::where('is_offers','=',0)
+                            ->where('current_stock','>',0);            
+        }
+        else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists',function($join) {
+                    $join->on('wishlists.product_id','=','products.id')
+                    ->where("wishlists.user_id",'=',Db::raw('?'));
+            })->setBindings(array_merge($query->getBindings(),$user_id));
+    
+            $query = $query->where('is_offers','=',0)
+                            ->where('current_stock','>',0);
+        }
+        
+        if($sel_color != ""){
+			$query = $query->join('colors','colors.id','products.color_id')
+                            ->where('color_id',$sel_color)
+                            ->select('products.*','colors.color_name');
+		}
+        return $query;
+    }
+
+    public function getProductsBySort($user_id, $sort_by)
+    {
+        if($user_id == 0) {
+            $query = Product::where('is_offers','=',0)
+                            ->where('current_stock','>',0);
+        }
+        else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists',function($join) {
+                    $join->on('wishlists.product_id','=','products.id')
+                    ->where("wishlists.user_id",'=',Db::raw('?'));
+            })->setBindings(array_merge($query->getBindings(),$user_id));
+    
+            $query = $query->where('is_offers','=',0)
+                            ->where('current_stock','>',0);
+        }
+        
+        if($sort_by == 'latest_product'){
+			$query = $query->orderBy('id','DESC');
+		}elseif ($sort_by == 'product_name') {
+			$query = $query->orderBy('product_name','ASC');
+		}elseif ($sort_by == 'p_low_to_high') {
+			$query = $query->orderBy('product_discount','ASC');
+		}elseif ($sort_by == 'p_high_to_low') {
+			$query = $query->orderBy('product_discount','DESC');
+		}elseif ($sort_by == 'q_low_to_high') {
+			$query = $query->orderBy('current_stock','ASC');
+		}elseif ($sort_by == 'q_high_to_low') {
+			$query = $query->orderBy('current_stock','DESC');
+		}
+        return $query;
+    }
+
+    public function getProductsByCategory($cat_id, $user_id)
+    {
+        if($user_id == 0) {
+            $query = Product::where('is_offers','=',0)
+                            ->where('current_stock','>',0)
+                            ->where('category_id', '=', $cat_id);
+        }
+        else {
+            $query = Product::select('wishlists.is_favourite', 'wishlists.user_id', 'products.*');
+            $query->leftJoin('wishlists',function($join) {
+                    $join->on('wishlists.product_id','=','products.id')
+                    ->where("wishlists.user_id",'=',Db::raw('?'));
+            })->setBindings(array_merge($query->getBindings(),$user_id));
+    
+            $query = $query->where('is_offers','=',0)
+                            ->where('current_stock','>',0)
+                            ->where('products.category_id', '=', $cat_id);
+        }
+        
+        return $query;
+    }
+
+    private function getRoleId($user_id)
+    {
+        return User::where('id', $user_id)->pluck('userrole_id')->first();
+    }
+}

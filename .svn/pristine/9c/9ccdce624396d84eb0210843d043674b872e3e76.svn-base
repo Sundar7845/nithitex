@@ -1,0 +1,76 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Wishlist;
+use Illuminate\Http\Request;
+use App\Traits\ResponseAPI;
+use App\Traits\Utils;
+use Illuminate\Support\Facades\Auth;
+
+class WishlistController extends Controller
+{
+    use ResponseAPI;
+    use Utils;
+    public function addToWishlist(Request $request)
+    {
+        $wishlist = Wishlist::where('product_id', $request->product_id)->where('user_id', Auth::user()->id)->pluck('id')->first();
+
+        if ($wishlist) {
+            Wishlist::where('id', $wishlist)->where('product_id', $request->product_id)->delete();
+            $responseData['status'] = true;
+            $responseData['message'] = "Removed From Wishlist Successfully";
+            return response()->json($responseData);
+        } else {
+            $wishlist = Wishlist::create([
+                'product_id' => $request->product_id,
+                'user_id' => Auth::user()->id,
+                'is_favourite' => 1
+            ]);
+        }
+
+
+        $responseData['status'] = true;
+        $responseData['message'] = "Added To Wishlist Successfully";
+
+        $data = array(
+            "product_id" => $wishlist['product_id'],
+            "user_id" => $wishlist['user_id']
+        );
+
+        $responseData['data'] = $data;
+        return response()->json($responseData);
+    }
+
+    public function wishlistProducts()
+    {
+        try {
+            $responseData = [];
+
+            $responseData['wishlist'] = [];
+            $wishlist = Wishlist::select('wishlists.*', 'products.seller_discount', 'products.product_discount', 'products.product_image','products.product_name')
+                ->join('products', 'products.id', 'wishlists.product_id')
+                ->join('categories', 'categories.id', 'products.category_id')
+                ->where('current_stock', '>', 0)
+                ->where('user_id', Auth::user()->id)->get();
+            foreach ($wishlist as $item) {
+                $wishlistDetails['wishlist_id'] = $item->id;
+                $wishlistDetails['product_id'] = $item->product_id;
+                $wishlistDetails['product_name'] = $item->product_name;
+                if ($this->getRoleId(Auth::user()->id) == 2) {
+                    $wishlistDetails['product_discount'] = round($item->seller_discount);
+                } else {
+                    $wishlistDetails['product_discount'] = round($item->product_discount);
+                }
+                $wishlistDetails['product_image'] = url($item->product_image);
+
+                array_push($responseData['wishlist'], $wishlistDetails);
+            }
+
+            return response()->json(['data' => $responseData], 200);
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+}

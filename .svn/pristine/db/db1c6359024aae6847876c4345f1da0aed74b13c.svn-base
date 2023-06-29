@@ -1,0 +1,248 @@
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <a href="#" class="sidebar-brand">
+      Nithi Tex
+    </a>
+    <div class="sidebar-toggler not-active">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+  <div class="sidebar-body">
+    <ul class="nav">
+      <li class="nav-item nav-category">Main</li>
+      <li class="nav-item">
+        <a href="<?php echo e(route('admin.dashboard')); ?>" class="nav-link">
+          <i class="link-icon" data-feather="box"></i>
+          <span class="link-title">Dashboard</span>
+        </a>
+      </li>
+      <li class="nav-item nav-category">Products</li>
+      <li class="nav-item">
+        <a class="nav-link" data-toggle="collapse" href="#emails" role="button" aria-expanded="false" aria-controls="emails">
+          <i class="link-icon" data-feather="layers"></i>
+          <span class="link-title">Products</span>
+          <i class="link-arrow" data-feather="chevron-down"></i>
+        </a>
+        <div class="collapse" id="emails">
+          <ul class="nav sub-menu">
+            <li class="nav-item">
+              <a href="<?php echo e(route('category.all')); ?>" class="nav-link">Categories</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('color.all')); ?>" class="nav-link">Colors</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('product.all')); ?>" class="nav-link">Add New Products</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('product.list')); ?>" class="nav-link">All Products</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('product.stock')); ?>" class="nav-link">Product Stock maintenance</a>
+            </li>
+          </ul>
+        </div>
+      </li>
+
+      <li class="nav-item nav-category">Customer Orders</li>
+      <li class="nav-item">
+        <a class="nav-link" data-toggle="collapse" href="#uiComponents" role="button" aria-expanded="false" aria-controls="uiComponents">
+          <i class="link-icon" data-feather="feather"></i>
+          <span class="link-title">Customer Orders</span>
+          <i class="link-arrow" data-feather="chevron-down"></i>
+        </a>
+        <div class="collapse" id="uiComponents">
+          <ul class="nav sub-menu">
+            <li class="nav-item">
+              <a href="<?php echo e(route('order.all')); ?>" class="nav-link">Customer All Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('orders-pending')); ?>" class="nav-link">Pending Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('orders-confirmed')); ?>" class="nav-link">Confirmed Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('orders-processing')); ?>" class="nav-link">Processing Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('orders-picked')); ?>" class="nav-link">Picked Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('orders-shipped')); ?>" class="nav-link">Shipped Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('orders-delivered')); ?>" class="nav-link">Delivered Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('orders-cancel')); ?>" class="nav-link">Cancelled Orders</a>
+            </li>
+          </ul>
+        </div>
+      </li>
+
+
+
+      <li class="nav-item nav-category">Reseller Orders</li>
+      <li class="nav-item">
+        <a class="nav-link" data-toggle="collapse" href="#reseller" role="button" aria-expanded="false" aria-controls="reseller">
+          <i class="link-icon" data-feather="feather"></i>
+          <span class="link-title">Reseller Orders</span>
+          <i class="link-arrow" data-feather="chevron-down"></i>
+        </a>
+        <div class="collapse" id="reseller">
+          <ul class="nav sub-menu">
+            <li class="nav-item">
+              <a href="<?php echo e(route('seller.order.all')); ?>" class="nav-link">Reseller All Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('seller.orders-pending')); ?>" class="nav-link">Pending Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('seller.orders-confirmed')); ?>" class="nav-link">Confirmed Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('seller.orders-processing')); ?>" class="nav-link">Processing Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('seller.orders-picked')); ?>" class="nav-link">Picked Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('seller.orders-shipped')); ?>" class="nav-link">Shipped Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('seller.orders-delivered')); ?>" class="nav-link">Delivered Orders</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('seller.orders-cancel')); ?>" class="nav-link">Cancelled Orders</a>
+            </li>
+          </ul>
+        </div>
+      </li>
+
+      <li class="nav-item nav-category">Returns</li>
+      <li class="nav-item">
+        <a class="nav-link" data-toggle="collapse" href="#advancedUI" role="button" aria-expanded="false" aria-controls="advancedUI">
+          <i class="link-icon" data-feather="database"></i>
+          <span class="link-title">Return  Orders</span>
+          <i class="link-arrow" data-feather="chevron-down"></i>
+        </a>
+        <div class="collapse" id="advancedUI">
+          <ul class="nav sub-menu">
+            <li class="nav-item">
+              <a href="<?php echo e(route('all.request')); ?>" class="nav-link">All Request</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('return.request')); ?>" class="nav-link">Customer Return Request</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('seller.return.request')); ?>" class="nav-link">Resellers Return Request</a>
+            </li>
+          </ul>
+        </div>
+      </li>
+
+      <li class="nav-item nav-category">Reseller</li>
+      <li class="nav-item">
+        <a class="nav-link" data-toggle="collapse" href="#forms" role="button" aria-expanded="false" aria-controls="forms">
+          <i class="link-icon" data-feather="users"></i>
+          <span class="link-title">Resellers</span>
+          <i class="link-arrow" data-feather="chevron-down"></i>
+        </a>
+        <div class="collapse" id="forms">
+          <ul class="nav sub-menu">
+            <li class="nav-item">
+              <a href="<?php echo e(route('resellers.all')); ?>" class="nav-link">All Resellers</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('resellers.request')); ?>" class="nav-link">Reseller Requests</a>
+            </li>
+          </ul>
+        </div>
+      </li>
+
+      <li class="nav-item nav-category">Reports</li>
+      <li class="nav-item">
+        <a class="nav-link"  data-toggle="collapse" href="#reports" role="button" aria-expanded="false" aria-controls="reports">
+          <i class="link-icon" data-feather="pie-chart"></i>
+          <span class="link-title">Reports</span>
+          <i class="link-arrow" data-feather="chevron-down"></i>
+        </a>
+        <div class="collapse" id="reports">
+          <ul class="nav sub-menu">
+            <li class="nav-item">
+              <a href="<?php echo e(route('report.sales')); ?>" class="nav-link">Sales</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('report.pending')); ?>" class="nav-link">Pending</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('report.picked')); ?>" class="nav-link">Picked</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('report.cancel')); ?>" class="nav-link">Cancel</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('report.return')); ?>" class="nav-link">Return</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('report.out_of_stock')); ?>" class="nav-link">Out Of Stock</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('report.stock')); ?>" class="nav-link">Stock</a>
+            </li>
+          </ul>
+        </div>
+      </li>
+
+      <li class="nav-item nav-category">Shop Settings</li>
+      <li class="nav-item">
+        <a class="nav-link"  data-toggle="collapse" href="#charts" role="button" aria-expanded="false" aria-controls="charts">
+          <i class="link-icon" data-feather="pie-chart"></i>
+          <span class="link-title">Settings</span>
+          <i class="link-arrow" data-feather="chevron-down"></i>
+        </a>
+        <div class="collapse" id="charts">
+          <ul class="nav sub-menu">
+            <li class="nav-item">
+              <a href="<?php echo e(route('about.all')); ?>" class="nav-link">Company About</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('policy.all')); ?>" class="nav-link">Company Policies</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('slider.all')); ?>" class="nav-link">Home Slider Setup</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(route('information.all')); ?>" class="nav-link">Shop Information</a>
+            </li>
+          </ul>
+        </div>
+      </li>
+
+      <li class="nav-item nav-category">Manage Staffs</li>
+      <li class="nav-item">
+        <a class="nav-link" data-toggle="collapse" href="#tables" role="button" aria-expanded="false" aria-controls="tables">
+          <i class="link-icon" data-feather="users"></i>
+          <span class="link-title">Staffs</span>
+          <i class="link-arrow" data-feather="chevron-down"></i>
+        </a>
+        <div class="collapse" id="tables">
+          <ul class="nav sub-menu">
+            <li class="nav-item">
+              <a href="<?php echo e(url('role')); ?>" class="nav-link">Roles & Permissions</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(url('assign_role_users')); ?>" class="nav-link">Assign Roles to Staffs</a>
+            </li>
+            <li class="nav-item">
+              <a href="<?php echo e(url('user')); ?>" class="nav-link">All Staffs</a>
+            </li>
+          </ul>
+        </div>
+      </li>
+    </ul>
+  </div>
+</nav><?php /**PATH D:\xampp\htdocs\Laravel-Nithitex\nithitex\resources\views/admin/body/sidebar.blade.php ENDPATH**/ ?>
